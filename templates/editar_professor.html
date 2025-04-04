@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Professor</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" value="{{ professor['nome'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="cpf" class="form-label">CPF</label>
+            <input type="text" class="form-control" name="cpf" value="{{ professor['cpf'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="endereco" class="form-label">Endereço</label>
+            <input type="text" class="form-control" name="endereco" value="{{ professor['endereco'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="telefone" class="form-label">Telefone</label>
+            <input type="text" class="form-control" name="telefone" value="{{ professor['telefone'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email" value="{{ professor['email'] }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="especialidade" class="form-label">Especialidade</label>
+            <select class="form-control" name="especialidade" required>
+                <option value="Matemática" {% if professor[6] == "Matemática" %}selected{% endif %}>Matemática</option>
+                <option value="Português" {% if professor[6] == "Português" %}selected{% endif %}>Português</option>
+                <option value="História" {% if professor[6] == "História" %}selected{% endif %}>História</option>
+                <option value="Geografia" {% if professor[6] == "Geografia" %}selected{% endif %}>Geografia</option>
+                <option value="Física" {% if professor[6] == "Física" %}selected{% endif %}>Física</option>
+                <option value="Química" {% if professor[6] == "Química" %}selected{% endif %}>Química</option>
+                <option value="Biologia" {% if professor[6] == "Biologia" %}selected{% endif %}>Biologia</option>
+                <option value="Inglês" {% if professor[6] == "Inglês" %}selected{% endif %}>Inglês</option>
+                <option value="Educação Física" {% if professor[6] == "Educação Física" %}selected{% endif %}>Educação Física</option>
+            </select>
+        </div>
+        
+
+        <div class="mb-3">
+            <label for="observacao" class="form-label">Observação</label>
+            <textarea class="form-control" name="observacao">{{ professor['observacao'] }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">💾 Salvar</button>
+        <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-secondary">❌ Cancelar</a>
+    </form>
+</div>
+{% endblock %}

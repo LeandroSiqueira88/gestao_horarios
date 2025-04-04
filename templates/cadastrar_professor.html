@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cadastrar Professor</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="cpf" class="form-label">CPF</label>
+            <input type="text" class="form-control" name="cpf" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="endereco" class="form-label">Endereço</label>
+            <input type="text" class="form-control" name="endereco" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="telefone" class="form-label">Telefone</label>
+            <input type="text" class="form-control" name="telefone" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="especialidade" class="form-label">Especialidade</label>
+            <select class="form-control" name="especialidade" required>
+                <option value="">Selecione...</option>
+                <option value="Artes">Artes</option>
+                <option value="Biologia">Biologia</option>
+                <option value="Educação Física">Educação Física</option>
+                <option value="Filosofia">Filosofia</option>
+                <option value="Física">Física</option>
+                <option value="Geografia">Geografia</option>
+                <option value="História">História</option>
+                <option value="Inglês">Inglês</option>
+                <option value="Matemática">Matemática</option>
+                <option value="Língua Portuguesa">Língua Portuguesa</option>
+                <option value="Química">Química</option>
+                <option value="Sociologia">Sociologia</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="observacao" class="form-label">Observação</label>
+            <textarea class="form-control" name="observacao"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">✅ Cadastrar</button>
+        <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-secondary">🔙 Voltar</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Lista de Alunos</h2>
+<a href="{{ url_for('routes.cadastrar_aluno') }}" class="btn btn-primary">Cadastrar Novo Aluno</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Email</th>
+            <th>Turma</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for aluno in alunos %}
+        <tr>
+            <td>{{ aluno.nome }}</td>
+            <td>{{ aluno.cpf }}</td>
+            <td>{{ aluno.email }}</td>
+            <td>{{ aluno.turma }}</td>
+            <td>
+                <a href="{{ url_for('routes.editar_aluno', id=aluno.id) }}" class="btn btn-primary">
+                    ✏️ Editar
+                </a>
+                
+                <form action="{{ url_for('routes.excluir_aluno', id=aluno.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" onclick="return confirm('Tem certeza que deseja excluir?');" class="btn btn-danger">
+                        ❌ Excluir
+                    </button>
+                </form>              
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

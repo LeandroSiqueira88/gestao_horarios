@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Cadastrar Aluno</h2>
+<form method="POST">
+    <label>Nome:</label>
+    <input type="text" name="nome" required class="form-control">
+
+    <label>CPF:</label>
+    <input type="text" name="cpf" required class="form-control">
+
+    <label>Endereço:</label>
+    <input type="text" name="endereco" required class="form-control">
+
+    <label>Telefone:</label>
+    <input type="text" name="telefone" required class="form-control">
+
+    <label>Email:</label>
+    <input type="email" name="email" required class="form-control">
+
+    <label>Data de Nascimento:</label>
+    <input type="date" name="data_nascimento" required class="form-control">
+
+    <label>Turma:</label>
+    <select name="turma" required class="form-control">
+        {% for turma in turmas %}
+        <option value="{{ turma }}">{{ turma }}</option>
+        {% endfor %}
+    </select>
+
+    <br>
+    <button type="submit" class="btn btn-success">Cadastrar</button>
+</form>
+{% endblock %}
