@@ -1,37 +1,51 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h2>Lista de Alunos</h2>
-<a href="{{ url_for('routes.cadastrar_aluno') }}" class="btn btn-primary">Cadastrar Novo Aluno</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Nome</th>
-            <th>CPF</th>
-            <th>Email</th>
-            <th>Turma</th>
-            <th>Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for aluno in alunos %}
-        <tr>
-            <td>{{ aluno.nome }}</td>
-            <td>{{ aluno.cpf }}</td>
-            <td>{{ aluno.email }}</td>
-            <td>{{ aluno.turma }}</td>
-            <td>
-                <a href="{{ url_for('routes.editar_aluno', id=aluno.id) }}" class="btn btn-primary">
-                    ✏️ Editar
-                </a>
-                
-                <form action="{{ url_for('routes.excluir_aluno', id=aluno.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" onclick="return confirm('Tem certeza que deseja excluir?');" class="btn btn-danger">
-                        ❌ Excluir
-                    </button>
-                </form>              
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container mt-4">
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mb-3">🔙 Voltar Painel Administrativo</a>
+    <h2>Lista de Alunos</h2>
+    <a href="{{ url_for('routes.cadastrar_aluno') }}" class="btn btn-primary mb-3">➕ Cadastrar Novo Aluno</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Endereço</th>
+                <th>Telefone</th>
+                <th>Email</th>
+                <th>Data de Nascimento</th>
+                <th>Turma</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for aluno in alunos %}
+            <tr>
+                <td>{{ aluno.nome }}</td>
+                <td>{{ aluno.cpf }}</td>
+                <td>{{ aluno.endereco }}</td>
+                <td>{{ aluno.telefone }}</td>
+                <td>{{ aluno.email }}</td>
+                <td>{{ aluno.data_nascimento }}</td>
+                <td>{{ aluno.turma }}</td>
+                <td>
+                    <a href="{{ url_for('routes.editar_aluno', id=aluno.id) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
+                    <form action="{{ url_for('routes.excluir_aluno', id=aluno.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">🗑️ Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

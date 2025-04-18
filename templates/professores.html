@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mb-3">🔙 Voltar para Gestão de Horários</a>
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mb-3">🔙 Voltar Painel Adminitrativo</a>
     <h2>Lista de Professores</h2>
     <a href="{{ url_for('routes.cadastrar_professor') }}" class="btn btn-primary mb-3">➕ Cadastrar Novo Professor</a>
 
@@ -19,6 +19,7 @@
             <tr>
                 <th>Nome</th>
                 <th>CPF</th>
+                <th>Endereco</th>
                 <th>Telefone</th>
                 <th>E-mail</th>
                 <th>Especialidade</th>
@@ -30,6 +31,7 @@
             <tr>
                 <td>{{ professor['nome'] }}</td>
                 <td>{{ professor['cpf'] }}</td>
+                <td>{{ professor['endereco'] }}</td>
                 <td>{{ professor['telefone'] }}</td>
                 <td>{{ professor['email'] }}</td>
                 <td>{{ professor['especialidade'] }}</td>

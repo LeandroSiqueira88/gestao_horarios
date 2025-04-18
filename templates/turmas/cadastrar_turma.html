@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>➕ Cadastrar Nova Turma</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome da Turma</label>
+            <input type="text" class="form-control" name="nome" required>
+        </div>
+        <div class="mb-3">
+            <label for="ano" class="form-label">Ano</label>
+            <input type="text" class="form-control" name="ano" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{{ url_for('routes.listar_turmas') }}" class="btn btn-secondary">Voltar</a>
+    </form>
+</div>
+{% endblock %}

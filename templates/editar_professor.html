@@ -41,18 +41,16 @@
         <div class="mb-3">
             <label for="especialidade" class="form-label">Especialidade</label>
             <select class="form-control" name="especialidade" required>
-                <option value="Matemática" {% if professor[6] == "Matemática" %}selected{% endif %}>Matemática</option>
-                <option value="Português" {% if professor[6] == "Português" %}selected{% endif %}>Português</option>
-                <option value="História" {% if professor[6] == "História" %}selected{% endif %}>História</option>
-                <option value="Geografia" {% if professor[6] == "Geografia" %}selected{% endif %}>Geografia</option>
-                <option value="Física" {% if professor[6] == "Física" %}selected{% endif %}>Física</option>
-                <option value="Química" {% if professor[6] == "Química" %}selected{% endif %}>Química</option>
-                <option value="Biologia" {% if professor[6] == "Biologia" %}selected{% endif %}>Biologia</option>
-                <option value="Inglês" {% if professor[6] == "Inglês" %}selected{% endif %}>Inglês</option>
-                <option value="Educação Física" {% if professor[6] == "Educação Física" %}selected{% endif %}>Educação Física</option>
+                {% set especialidades = [
+                    "Artes", "Biologia", "Educação Física", "Filosofia", "Física",
+                    "Geografia", "História", "Inglês", "Matemática", "Língua Portuguesa",
+                    "Química", "Sociologia"
+                ] %}
+                {% for esp in especialidades %}
+                    <option value="{{ esp }}" {% if professor['especialidade'] == esp %}selected{% endif %}>{{ esp }}</option>
+                {% endfor %}
             </select>
         </div>
-        
 
         <div class="mb-3">
             <label for="observacao" class="form-label">Observação</label>
