@@ -6,7 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .navbar-custom {
-            background-color: #5BC0EB; /* Azul claro */
+            background-color: #5BC0EB;
         }
         .navbar .nav-link {
             font-weight: bold;
@@ -21,11 +21,10 @@
     </style>
 </head>
 <body>
-    
+
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4 shadow">
     <div class="container-fluid">
-        <!-- Botão Painel Administrativo -->
-        <a class="navbar-brand fw-bold text-light px-4 py-2 fs-4 " href="{{ url_for('routes.dashboard') }}">
+        <a class="navbar-brand fw-bold text-light px-4 py-2 fs-4" href="{{ url_for('routes.dashboard') }}">
             📊 Painel Administrativo
         </a>
 
@@ -43,8 +42,9 @@
                         ➕ Cadastro
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_aluno') }}">Alunos</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_professor') }}">Professores</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_aluno') }}">👨‍🎓 Alunos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_professor') }}">👨‍🏫 Professores</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_sala') }}">🏫 Sala</a></li>
                     </ul>
                 </li>
 
@@ -54,13 +54,13 @@
                         📚 Gestão
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_alunos') }}">Alunos</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores') }}">Professores</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_salas') }}">Salas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_alunos') }}">👨‍🎓 Alunos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores') }}">👨‍🏫 Professores</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_salas') }}">🏫 Salas</a></li>
 
-                        {% if session['usuario_perfil'] == 'master' %}
+                        {% if session['usuario_perfil'] in ['master', 'super'] %}
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_usuarios') }}">Usuários</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_usuarios') }}">👥 Usuários</a></li>
                         {% endif %}
                     </ul>
                 </li>
@@ -71,9 +71,9 @@
                         🗓️ Horários
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('routes.exibir_salas_para_geracao') }}">📆 Gerar Horários</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_turmas') }}">📋 Visualizar Horários</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_sala') }}">➕ Nova Sala</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.exibir_salas_para_geracao') }}">⚙️ Gerar Horários</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_turmas') }}">📋 Por Sala</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores') }}">👨‍🏫 Por Professor</a></li>
                     </ul>
                 </li>
             </ul>
@@ -112,13 +112,15 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const cpfInput = document.getElementById('cpf');
-        cpfInput.addEventListener('input', function () {
-            let value = cpfInput.value.replace(/\D/g, '');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d)/, '$1.$2');
-            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-            cpfInput.value = value;
-        });
+        if (cpfInput) {
+            cpfInput.addEventListener('input', function () {
+                let value = cpfInput.value.replace(/\D/g, '');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                cpfInput.value = value;
+            });
+        }
     });
 </script>
 </body>

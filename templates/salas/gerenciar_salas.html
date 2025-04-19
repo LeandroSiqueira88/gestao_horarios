@@ -26,7 +26,8 @@
                 <td>{{ sala.capacidade - sala.qtd_alunos }}</td>
                 <td>
                     <a href="{{ url_for('routes.editar_sala', sala_id=sala.id) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
-                    <a href="{{ url_for('routes.visualizar_alunos_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👥 Alunos</a>
+                    <a href="{{ url_for('routes.visualizar_alunos_da_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👥 Alunos</a>
+                    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-primary btn-sm">📘 Ver Horário</a>
                     <form method="POST" action="{{ url_for('routes.excluir_sala', sala_id=sala.id) }}" style="display:inline;">
                         <button class="btn btn-danger btn-sm" onclick="return confirm('Confirma exclusão da sala?')">🗑️</button>
                     </form>
@@ -37,3 +38,4 @@
     </table>
 </div>
 {% endblock %}
+

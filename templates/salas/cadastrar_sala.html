@@ -5,6 +5,7 @@
     <h2>➕ Cadastrar Nova Sala</h2>
 
     <form method="POST">
+        <!-- Nome da Sala -->
         <div class="mb-3">
             <label for="nome" class="form-label">Nome da Sala</label>
             <input 
@@ -13,10 +14,12 @@
                 name="nome" 
                 placeholder="Ex: 1ºA" 
                 required 
-                pattern="^\S{3,}$"
-                title="Mínimo 3 caracteres, sem espaços.">
+                maxlength="3"
+                pattern="^\S{3}$"
+                title="Digite exatamente 3 caracteres, sem espaços. Ex: 1ºA">
         </div>
 
+        <!-- Ano Letivo -->
         <div class="mb-3">
             <label for="ano" class="form-label">Ano Letivo</label>
             <input 
@@ -27,9 +30,17 @@
                 required>
         </div>
 
+        <!-- Capacidade Máxima -->
         <div class="mb-3">
             <label for="capacidade" class="form-label">Capacidade Máxima</label>
-            <input type="number" class="form-control" name="capacidade" min="1" required>
+            <input 
+                type="number" 
+                class="form-control" 
+                name="capacidade" 
+                min="1" 
+                max="40"
+                required 
+                title="Máximo permitido: 40 alunos.">
         </div>
 
         <button type="submit" class="btn btn-success">✅ Cadastrar Sala</button>

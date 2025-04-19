@@ -4,8 +4,29 @@
 {% block content %}
 <div class="container mt-4">
     <h2>📚 Visualização de Horários</h2>
-    <p>Você pode acessar os horários diretamente por sala.</p>
+    <p class="mb-4">Você pode acessar os horários diretamente por sala.</p>
 
-    <a href="{{ url_for('routes.exibir_salas_para_geracao') }}" class="btn btn-primary mt-2">👁️ Ver Salas</a>
+    <table class="table table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Sala</th>
+                <th>Ano</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sala in salas %}
+            <tr>
+                <td>{{ sala.nome }}</td>
+                <td>{{ sala.ano }}</td>
+                <td>
+                    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👁️ Ver Horário</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mt-3">🔙 Voltar ao Painel</a>
 </div>
 {% endblock %}

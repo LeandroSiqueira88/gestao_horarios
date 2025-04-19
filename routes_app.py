@@ -136,35 +136,48 @@ def cadastrar_professor():
     if request.method == 'POST':
         nome = request.form['nome']
         cpf = request.form['cpf']
-        cpf = re.sub(r'\D', '', cpf)
-        cpf = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
         endereco = request.form['endereco']
         telefone = request.form['telefone']
         email = request.form['email']
         especialidade = request.form['especialidade']
         observacao = request.form['observacao']
 
+        # Formatar CPF para 000.000.000-00
+        import re
+        def formatar_cpf(cpf):
+            numeros = re.sub(r'\D', '', cpf)
+            return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
+        cpf = formatar_cpf(cpf)
+
         cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Verifica se o CPF já existe
+        # Verificar se nome já existe (apenas alerta, não bloqueia)
+        cur.execute("SELECT id FROM professores WHERE nome = %s", (nome,))
+        professor_com_nome_igual = cur.fetchone()
+        if professor_com_nome_igual:
+            flash("⚠️ Já existe um professor com este nome!", "warning")
+
+        # Verificar se CPF já existe (impede)
         cur.execute("SELECT id FROM professores WHERE cpf = %s", (cpf,))
         professor_existente = cur.fetchone()
-
         if professor_existente:
             flash("❗ Já existe um professor com este CPF!", "danger")
-        else:
-            cur.execute('''
-                INSERT INTO professores (nome, cpf, endereco, telefone, email, especialidade, observacao)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (nome, cpf, endereco, telefone, email, especialidade, observacao))
+            cur.close()
+            return redirect(url_for('routes.cadastrar_professor'))
 
-            mysql.connection.commit()
-            flash("✅ Professor cadastrado com sucesso!", "success")
+        # Inserir novo professor
+        cur.execute('''
+            INSERT INTO professores (nome, cpf, endereco, telefone, email, especialidade, observacao)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ''', (nome, cpf, endereco, telefone, email, especialidade, observacao))
 
+        mysql.connection.commit()
         cur.close()
+        flash("✅ Professor cadastrado com sucesso!", "success")
         return redirect(url_for('routes.listar_professores'))
 
     return render_template('professores/cadastrar_professor.html')
+
 
 # 🔹 EDITAR PROFESSOR
 @routes.route('/editar_professor/<int:id>', methods=['GET', 'POST'])
@@ -342,7 +355,8 @@ def gerenciar_usuarios():
     cur.execute("SELECT * FROM usuarios")
     usuarios = cur.fetchall()
     cur.close()
-    return render_template('usuarios.html', usuarios=usuarios)
+    return render_template('usuarios/gerenciar_usuarios.html', usuarios=usuarios)
+
 
 @routes.route('/usuarios/cadastrar', methods=['GET', 'POST'])
 @login_obrigatorio
@@ -408,36 +422,73 @@ def excluir_usuario(id):
     return redirect(url_for('routes.gerenciar_usuarios'))
 
 
-@routes.route('/horario/<int:turma_id>')
-def visualizar_horario(turma_id):
-    cursor = mysql.connection.cursor()
+@routes.route('/horario/<int:sala_id>')
+@login_obrigatorio
+def visualizar_horario_sala(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    cursor.execute("SELECT nome, ano FROM turmas WHERE id = %s", (turma_id,))
-    turma = cursor.fetchone()
+    # Busca informações da sala
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
 
-    cursor.execute("""
-        SELECT dia_da_semana, aula_numero, materia
+    if not sala:
+        flash("Sala não encontrada!", "danger")
+        return redirect(url_for('routes.listar_turmas'))
+
+    # Busca o horário da sala
+    cur.execute("""
+        SELECT dia_semana, aula_numero, materia
         FROM horarios
-        WHERE turma_id = %s
+        WHERE sala_id = %s
         ORDER BY 
-            FIELD(dia_da_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
+            FIELD(dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
             aula_numero
-    """, (turma_id,))
-    resultados = cursor.fetchall()
-    cursor.close()
+    """, (sala_id,))
+    resultados = cur.fetchall()
+    cur.close()
 
-    horarios = {
-        'Segunda': [''] * 6,
-        'Terça': [''] * 6,
-        'Quarta': [''] * 6,
-        'Quinta': [''] * 6,
-        'Sexta': [''] * 6
-    }
+    # Estrutura da grade: aulas x dias
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    linhas = ['1ª Aula', '2ª Aula', '3ª Aula', '🧃 Intervalo', '4ª Aula', '5ª Aula', '6ª Aula']
 
-    for dia, numero, materia in resultados:
-        horarios[dia][numero - 1] = materia
+    grade = {linha: {dia: '' for dia in dias} for linha in linhas}
 
-    return render_template('horario_turma.html', turma=turma, horarios=horarios)
+    for linha in resultados:
+        dia = linha['dia_semana']
+        aula = linha['aula_numero']
+        materia = linha['materia']
+
+        if aula == 4:
+            linha_key = '4ª Aula'
+        elif aula == 5:
+            linha_key = '5ª Aula'
+        elif aula == 6:
+            linha_key = '6ª Aula'
+        elif aula == 3:
+            linha_key = '3ª Aula'
+        elif aula == 2:
+            linha_key = '2ª Aula'
+        elif aula == 1:
+            linha_key = '1ª Aula'
+        else:
+            continue
+
+        # Ajustar posição considerando o intervalo
+        if aula >= 4:
+            linhas_index = aula  # já vai pra depois do intervalo
+            linha_key = f'{aula}ª Aula'
+        else:
+            linha_key = f'{aula}ª Aula'
+
+        grade[linha_key][dia] = materia
+
+    # Adiciona a linha de intervalo
+    for dia in dias:
+        grade['🧃 Intervalo'][dia] = '🧃🍞 Intervalo'
+
+    return render_template('horarios/horario_sala.html', sala=sala, grade=grade, dias=dias)
+
 
 
 @routes.route('/turmas')
@@ -447,7 +498,7 @@ def listar_turmas():
     cur.execute("SELECT * FROM salas")
     salas = cur.fetchall()
     cur.close()
-    return render_template('listar_salas.html', salas=salas)
+    return render_template('horarios/listar_turmas.html', salas=salas)
 
 
 @routes.route('/turmas/cadastrar', methods=['GET', 'POST'])
@@ -466,40 +517,141 @@ def cadastrar_turma():
     
     return render_template('turmas/cadastrar_turma.html')
 
+# 🔹 GERAR HORÁRIOS
 @routes.route('/gerar_horarios')
+@login_obrigatorio
 def exibir_salas_para_geracao():
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cur.execute("SELECT * FROM salas")
     salas = cur.fetchall()
     cur.close()
-    return render_template('gerar_horarios.html', salas=salas)
-
+    return render_template('horarios/gerar_horarios.html', salas=salas)
 
 @routes.route('/gerar_horario/<int:sala_id>')
+@login_obrigatorio
 def gerar_horario(sala_id):
-    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
-    materias = ['Língua Portuguesa', 'Matemática', 'Ciências', 'Geografia',
-                'Língua Inglesa', 'Arte', 'Educação Física', 'Filosofia']
-
-    import random
+    mysql = get_mysql()
     cur = mysql.connection.cursor()
 
-    # Limpar horários anteriores da sala
+    # Mapear professores por especialidade
+    cur.execute("SELECT nome, especialidade FROM professores")
+    prof_resultado = cur.fetchall()
+    mapa_professores = {prof[1]: prof[0] for prof in prof_resultado}
+
+    # Carga horária convertida em número de aulas semanais
+    carga_horaria = {
+        "Língua Portuguesa": 6,
+        "Matemática": 6,
+        "Inglês": 2,
+        "Física": 2,
+        "Química": 2,
+        "Biologia": 2,
+        "História": 2,
+        "Geografia": 2,
+        "Filosofia": 1,
+        "Sociologia": 1,
+        "Artes": 1,
+        "Educação Física": 1
+    }
+
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    aulas_por_dia = 6
+    total_aulas = len(dias) * aulas_por_dia  # 30 aulas semanais
+
+    # Montar blocos de 2 aulas da mesma matéria
+    blocos = []
+    for materia, total in carga_horaria.items():
+        prof = mapa_professores.get(materia, "—")
+        materia_com_prof = f"{materia}<br><small>{prof}</small>"
+
+        # Dividir em blocos de 2 aulas
+        num_blocos = total // 2
+        for _ in range(num_blocos):
+            blocos.append([materia_com_prof, materia_com_prof])
+        
+        # Aula avulsa (se ímpar)
+        if total % 2 != 0:
+            blocos.append([materia_com_prof])
+
+    # Embaralhar blocos sem quebrar pares
+    import random
+    random.shuffle(blocos)
+
+    # Achatar lista mantendo pares
+    aulas = [aula for bloco in blocos for aula in bloco]
+
+    # Limpar horários anteriores
     cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
-    for dia in dias_semana:
-        aulas_do_dia = random.sample(materias, 6)  # 6 matérias por dia
-        for i, materia in enumerate(aulas_do_dia, start=1):
-            cur.execute(
-                "INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia) VALUES (%s, %s, %s, %s)",
-                (sala_id, dia, i, materia)
-            )
+
+    index = 0
+    for dia in dias:
+        for numero in range(1, aulas_por_dia + 1):
+            if index < len(aulas):
+                cur.execute("""
+                    INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia)
+                    VALUES (%s, %s, %s, %s)
+                """, (sala_id, dia, numero, aulas[index]))
+                index += 1
 
     mysql.connection.commit()
     cur.close()
 
-    flash('Horário gerado com sucesso!', 'success')
+    flash("Horário gerado com sucesso!", "success")
     return redirect(url_for('routes.exibir_salas_para_geracao'))
+
+
+
+
+@routes.route('/horarios/professor/<int:professor_id>')
+@login_obrigatorio
+def visualizar_horario_professor(professor_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Obter o professor pelo ID
+    cur.execute("SELECT * FROM professores WHERE id = %s", (professor_id,))
+    professor = cur.fetchone()
+
+    if not professor:
+        flash("Professor não encontrado!", "danger")
+        return redirect(url_for('routes.listar_professores'))
+
+    especialidade = professor['especialidade']  # Nome da matéria associada ao professor
+
+    # Obter horários apenas para a especialidade do professor
+    cur.execute("""
+        SELECT h.dia_semana, h.aula_numero, h.materia, s.nome AS sala_nome
+        FROM horarios h
+        JOIN salas s ON h.sala_id = s.id
+        WHERE h.materia = %s
+        ORDER BY
+            FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
+            h.aula_numero
+    """, (especialidade,))
+
+    resultados = cur.fetchall()
+    cur.close()
+
+    # Inicializar estrutura do horário
+    horario = {
+        'Segunda': [''] * 6,
+        'Terça': [''] * 6,
+        'Quarta': [''] * 6,
+        'Quinta': [''] * 6,
+        'Sexta': [''] * 6
+    }
+
+    for row in resultados:
+        texto = f"{row['materia']} ({row['sala_nome']})"
+        horario[row['dia_semana']][row['aula_numero'] - 1] = texto
+
+    return render_template(
+        'horarios/horario_professor.html',
+        professor=professor,
+        horario=horario
+    )
+
 
 
 # 📥 Cadastrar sala
@@ -560,11 +712,17 @@ def visualizar_alunos_da_sala(sala_id):
 def gerenciar_salas():
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cur.execute("SELECT * FROM salas")
+
+    cur.execute("""
+        SELECT s.*, COUNT(a.id) AS qtd_alunos
+        FROM salas s
+        LEFT JOIN alunos a ON a.sala_id = s.id
+        GROUP BY s.id
+    """)
+
     salas = cur.fetchall()
     cur.close()
     return render_template('salas/gerenciar_salas.html', salas=salas)
-
 
 
 # ✏️ Editar sala
@@ -587,7 +745,6 @@ def editar_sala(sala_id):
     sala = cur.fetchone()
     return render_template('editar_sala.html', sala=sala)
 
-
 # 🗑️ Excluir sala
 @routes.route('/salas/excluir/<int:sala_id>', methods=['POST'])
 def excluir_sala(sala_id):
@@ -597,3 +754,5 @@ def excluir_sala(sala_id):
     mysql.connection.commit()
     flash("Sala excluída!", "danger")
     return redirect(url_for('routes.gerenciar_salas'))
+
+
