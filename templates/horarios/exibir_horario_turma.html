@@ -1,26 +1,25 @@
 {% extends 'base.html' %}
+{% block title %}Horário da Turma{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>📘 Horário da Turma: {{ turma[0] }} - {{ turma[1] }}</h2>
-    <table class="table table-bordered text-center mt-3">
-        <thead>
+
+    <table class="table table-bordered mt-4 text-center">
+        <thead class="table-light">
             <tr>
                 <th>Dia</th>
-                <th>1ª Aula</th>
-                <th>2ª Aula</th>
-                <th>3ª Aula</th>
-                <th>4ª Aula</th>
-                <th>5ª Aula</th>
-                <th>6ª Aula</th>
+                {% for i in range(1, 7) %}
+                    <th>{{ i }}ª Aula</th>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for dia, aulas in horarios.items() %}
             <tr>
                 <td><strong>{{ dia }}</strong></td>
-                {% for aula in aulas %}
-                <td>{{ aula }}</td>
+                {% for materia in aulas %}
+                    <td>{{ materia }}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

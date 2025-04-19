@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">⚙️ Painel Administrativo</h2>
+    <div class="row text-center">
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-primary w-100">👨‍🏫 Gerenciar Professores</a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-success w-100">🏫 Gerenciar Salas</a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.gerenciar_usuarios') }}" class="btn btn-warning w-100">👥 Gerenciar Usuários</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

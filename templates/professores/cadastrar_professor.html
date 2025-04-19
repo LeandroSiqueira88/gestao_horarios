@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Cadastrar Professor{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>➕ Cadastrar Novo Professor</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="card p-4 shadow">
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" required>
+        </div>
+
+        <div class="mb-3">
+    <label for="cpf" class="form-label">CPF</label>
+    <input type="text" class="form-control" id="cpf" name="cpf" maxlength="14" required
+           placeholder="123.456.789-00">
+        </div>
+  
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const cpfInput = document.getElementById('cpf');
+  
+      cpfInput.addEventListener('input', function () {
+        let value = cpfInput.value.replace(/\D/g, '');
+  
+        if (value.length > 11) value = value.slice(0, 11);
+  
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  
+        cpfInput.value = value;
+      });
+    });
+    </script>
+  
+
+        <div class="mb-3">
+            <label class="form-label">Endereço</label>
+            <input type="text" class="form-control" name="endereco" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Telefone</label>
+            <input type="text" class="form-control" name="telefone" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Especialidade</label>
+            <select class="form-control" name="especialidade" required>
+                <option value="">Selecione...</option>
+                {% for esp in [
+                    'Artes', 'Biologia', 'Educação Física', 'Filosofia', 'Física',
+                    'Geografia', 'História', 'Inglês', 'Matemática',
+                    'Língua Portuguesa', 'Química', 'Sociologia'] %}
+                    <option value="{{ esp }}">{{ esp }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observação</label>
+            <textarea class="form-control" name="observacao" rows="2"></textarea>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-secondary">🔙 Cancelar</a>
+            <button type="submit" class="btn btn-success">✅ Cadastrar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

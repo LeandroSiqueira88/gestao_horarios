@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📋 Salas Cadastradas</h2>
+    <a href="{{ url_for('routes.cadastrar_sala') }}" class="btn btn-success mb-3">➕ Nova Sala</a>
+
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Nome</th>
+                <th>Ano</th>
+                <th>Capacidade</th>
+                <th>Alunos Cadastrados</th>
+                <th>Vagas</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sala in salas %}
+            <tr>
+                <td>{{ sala.nome }}</td>
+                <td>{{ sala.ano }}</td>
+                <td>{{ sala.capacidade }}</td>
+                <td>{{ sala.qtd_alunos }}</td>
+                <td>{{ sala.capacidade - sala.qtd_alunos }}</td>
+                <td>
+                    <a href="{{ url_for('routes.editar_sala', sala_id=sala.id) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
+                    <a href="{{ url_for('routes.visualizar_alunos_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👥 Alunos</a>
+                    <form method="POST" action="{{ url_for('routes.excluir_sala', sala_id=sala.id) }}" style="display:inline;">
+                        <button class="btn btn-danger btn-sm" onclick="return confirm('Confirma exclusão da sala?')">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -4,8 +4,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from extensoes import mysql  # ✅ aqui pegamos o mysql
 from auth import login_obrigatorio, somente_master
 import sqlite3
+from flask import Flask
+from datetime import datetime
+import re
 
 
+
+
+app = Flask(__name__)
 # 🔹 Criando o Blueprint
 routes = Blueprint('routes', __name__)
 
@@ -112,6 +118,7 @@ def get_db_connection():
     return conn
 
 # 🔹 CRUD de Professores (SQLite)
+# 🔹 LISTAR PROFESSORES
 @routes.route('/professores')
 def listar_professores():
     mysql = get_mysql()
@@ -119,39 +126,52 @@ def listar_professores():
     cur.execute("SELECT * FROM professores")
     professores = cur.fetchall()
     cur.close()
-    return render_template('professores.html', professores=professores)
+    return render_template('professores/listar_professores.html', professores=professores)
 
-
+# 🔹 CADASTRAR PROFESSOR
 @routes.route('/cadastrar_professor', methods=['GET', 'POST'])
 def cadastrar_professor():
+    mysql = get_mysql()
+
     if request.method == 'POST':
-        dados = (
-            request.form['nome'],
-            request.form['cpf'],
-            request.form['endereco'],
-            request.form['telefone'],
-            request.form['email'],
-            request.form['especialidade'],
-            request.form['observacao']
-        )
-        conn = get_db_connection()
-        conn.execute('''
-            INSERT INTO professores (nome, cpf, endereco, telefone, email, especialidade, observacao)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', dados)
-        conn.commit()
-        conn.close()
-        flash("Professor cadastrado com sucesso!", "success")
+        nome = request.form['nome']
+        cpf = request.form['cpf']
+        cpf = re.sub(r'\D', '', cpf)
+        cpf = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+        endereco = request.form['endereco']
+        telefone = request.form['telefone']
+        email = request.form['email']
+        especialidade = request.form['especialidade']
+        observacao = request.form['observacao']
+
+        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Verifica se o CPF já existe
+        cur.execute("SELECT id FROM professores WHERE cpf = %s", (cpf,))
+        professor_existente = cur.fetchone()
+
+        if professor_existente:
+            flash("❗ Já existe um professor com este CPF!", "danger")
+        else:
+            cur.execute('''
+                INSERT INTO professores (nome, cpf, endereco, telefone, email, especialidade, observacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (nome, cpf, endereco, telefone, email, especialidade, observacao))
+
+            mysql.connection.commit()
+            flash("✅ Professor cadastrado com sucesso!", "success")
+
+        cur.close()
         return redirect(url_for('routes.listar_professores'))
 
-    return render_template('cadastrar_professor.html')
+    return render_template('professores/cadastrar_professor.html')
 
+# 🔹 EDITAR PROFESSOR
 @routes.route('/editar_professor/<int:id>', methods=['GET', 'POST'])
 def editar_professor(id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # 🔹 Se for POST, atualiza os dados
     if request.method == 'POST':
         dados = (
             request.form['nome'],
@@ -174,7 +194,6 @@ def editar_professor(id):
         flash("Professor atualizado com sucesso!", "success")
         return redirect(url_for('routes.listar_professores'))
 
-    # 🔹 Se for GET, busca o professor pelo ID
     cur.execute("SELECT * FROM professores WHERE id = %s", (id,))
     professor = cur.fetchone()
     cur.close()
@@ -183,9 +202,9 @@ def editar_professor(id):
         flash("Professor não encontrado!", "danger")
         return redirect(url_for('routes.listar_professores'))
 
-    return render_template('editar_professor.html', professor=professor)
+    return render_template('professores/editar_professor.html', professor=professor)
 
-
+# 🔹 EXCLUIR PROFESSOR
 @routes.route('/excluir_professor/<int:id>', methods=['POST'])
 def excluir_professor(id):
     mysql = get_mysql()
@@ -197,85 +216,105 @@ def excluir_professor(id):
     return redirect(url_for('routes.listar_professores'))
 
 
-
 # 🔹 CRUD Alunos (MySQL)
 @routes.route('/alunos')
 def listar_alunos():
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cur.execute("SELECT * FROM alunos")
+    cur.execute("""
+        SELECT a.*, s.nome AS sala_nome
+        FROM alunos a
+        LEFT JOIN salas s ON a.sala_id = s.id
+    """)
     alunos = cur.fetchall()
     cur.close()
-    return render_template('alunos.html', alunos=alunos)
+    return render_template('alunos/listar_alunos.html', alunos=alunos)
+
 
 @routes.route('/cadastrar_aluno', methods=['GET', 'POST'])
 def cadastrar_aluno():
     mysql = get_mysql()
-    if request.method == 'POST':
-        dados = {
-            'nome': request.form['nome'].strip(),
-            'cpf': request.form['cpf'].strip(),
-            'endereco': request.form['endereco'].strip(),
-            'telefone': request.form['telefone'].strip(),
-            'email': request.form['email'].strip(),
-            'data_nascimento': request.form['data_nascimento'].strip(),
-            'turma': request.form['turma']
-        }
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        if not all(dados.values()):
-            flash('Todos os campos são obrigatórios!', 'danger')
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
+
+    if request.method == 'POST':
+        nome = request.form['nome']
+        cpf = request.form['cpf']
+        endereco = request.form['endereco']
+        telefone = request.form['telefone']
+        email = request.form['email']
+        data_nascimento = request.form['data_nascimento']
+        sala_id = request.form.get('sala_id') or None
+
+        # 🔸 Formatar CPF (opcional, para garantir padrão)
+        cpf = cpf.strip().replace("-", "").replace(".", "")
+        cpf = f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
+
+        # 🔸 Verifica duplicidade de CPF (bloqueia)
+        cur.execute("SELECT id FROM alunos WHERE cpf = %s", (cpf,))
+        aluno_existente = cur.fetchone()
+        if aluno_existente:
+            flash("⚠️ Já existe um aluno com este CPF!", "danger")
+            cur.close()
             return redirect(url_for('routes.cadastrar_aluno'))
 
-        cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cur.execute("SELECT id FROM alunos WHERE cpf = %s OR email = %s", (dados['cpf'], dados['email']))
-        if cur.fetchone():
-            flash('Aluno já cadastrado com este CPF ou e-mail!', 'danger')
-        else:
-            cur.execute("""
-                INSERT INTO alunos (nome, cpf, endereco, telefone, email, data_nascimento, turma) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, tuple(dados.values()))
-            mysql.connection.commit()
-            flash('Aluno cadastrado com sucesso!', 'success')
+        # 🔸 Verifica duplicidade de nome (somente alerta)
+        cur.execute("SELECT id FROM alunos WHERE nome = %s", (nome,))
+        nome_duplicado = cur.fetchone()
+        if nome_duplicado:
+            flash("ℹ️ Atenção: já existe um aluno com este nome!", "warning")
 
+        # 🔸 Cadastrar aluno
+        cur.execute("""
+            INSERT INTO alunos (nome, cpf, endereco, telefone, email, data_nascimento, sala_id) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (nome, cpf, endereco, telefone, email, data_nascimento, sala_id))
+        mysql.connection.commit()
         cur.close()
+
+        flash("✅ Aluno cadastrado com sucesso!", "success")
         return redirect(url_for('routes.listar_alunos'))
 
-    return render_template('cadastrar_aluno.html', turmas=TURMAS)
+    cur.close()
+    return render_template('alunos/cadastrar_aluno.html', salas=salas)
+
+
 
 @routes.route('/editar_aluno/<int:id>', methods=['GET', 'POST'])
 def editar_aluno(id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    if request.method == 'POST':
-        dados = (
-            request.form['nome'],
-            request.form['endereco'],
-            request.form['telefone'],
-            request.form['email'],
-            request.form.get('data_nascimento', ''),
-            request.form['turma'],
-            id
-        )
-        cur.execute("""
-            UPDATE alunos 
-            SET nome=%s, endereco=%s, telefone=%s, email=%s, data_nascimento=%s, turma=%s 
-            WHERE id=%s
-        """, dados)
-        mysql.connection.commit()
-        flash('Dados do aluno atualizados com sucesso!', 'success')
-        return redirect(url_for('routes.listar_alunos'))
-
     cur.execute("SELECT * FROM alunos WHERE id = %s", (id,))
     aluno = cur.fetchone()
-    cur.close()
 
-    if not aluno:
-        flash('Aluno não encontrado!', 'danger')
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
+
+    if request.method == 'POST':
+        nome = request.form['nome']
+        endereco = request.form['endereco']
+        telefone = request.form['telefone']
+        email = request.form['email']
+        data_nascimento = request.form.get('data_nascimento')
+        sala_id = request.form.get('sala_id') or None
+
+        cur.execute("""
+            UPDATE alunos 
+            SET nome=%s, endereco=%s, telefone=%s, email=%s, data_nascimento=%s, sala_id=%s
+            WHERE id=%s
+        """, (nome, endereco, telefone, email, data_nascimento, sala_id, id))
+
+        mysql.connection.commit()
+        flash("Aluno atualizado com sucesso!", "success")
+        cur.close()
         return redirect(url_for('routes.listar_alunos'))
 
-    return render_template('editar_aluno.html', aluno=aluno, turmas=TURMAS)
+    cur.close()
+    return render_template('alunos/editar_aluno.html', aluno=aluno, salas=salas)
+
 
 @routes.route('/excluir_aluno/<int:id>', methods=['POST'])
 def excluir_aluno(id):
@@ -286,6 +325,12 @@ def excluir_aluno(id):
     cur.close()
     flash('Aluno excluído com sucesso!', 'success')
     return redirect(url_for('routes.listar_alunos'))
+
+@app.template_filter('date')
+def format_date(value, format='%d/%m/%Y'):
+    if isinstance(value, datetime):
+        return value.strftime(format)
+    return value
 
 # 🔹 CRUD Usuários (MySQL)
 @routes.route('/usuarios')
@@ -396,12 +441,14 @@ def visualizar_horario(turma_id):
 
 
 @routes.route('/turmas')
+@login_obrigatorio
 def listar_turmas():
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM turmas")
-    turmas = cursor.fetchall()
-    cursor.close()
-    return render_template('listar_turmas.html', turmas=turmas)
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
+    cur.close()
+    return render_template('listar_salas.html', salas=salas)
+
 
 @routes.route('/turmas/cadastrar', methods=['GET', 'POST'])
 @login_obrigatorio
@@ -420,41 +467,133 @@ def cadastrar_turma():
     return render_template('turmas/cadastrar_turma.html')
 
 @routes.route('/gerar_horarios')
-def exibir_turmas_para_geracao():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, nome, ano FROM turmas")
-    turmas = cur.fetchall()
+def exibir_salas_para_geracao():
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
     cur.close()
-    return render_template("gerar_horarios.html", turmas=turmas)
+    return render_template('gerar_horarios.html', salas=salas)
 
 
-@routes.route('/gerar_horario/<int:turma_id>')
-def gerar_horario(turma_id):
+@routes.route('/gerar_horario/<int:sala_id>')
+def gerar_horario(sala_id):
     dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
-    materias = [
-        'Língua Portuguesa', 'Matemática', 'Ciências',
-        'Geografia', 'Língua Inglesa', 'Arte',
-        'Educação Física', 'Filosofia'
-    ]
+    materias = ['Língua Portuguesa', 'Matemática', 'Ciências', 'Geografia',
+                'Língua Inglesa', 'Arte', 'Educação Física', 'Filosofia']
 
     import random
     cur = mysql.connection.cursor()
 
-    # Limpa os horários antigos dessa turma, se houver
-    cur.execute("DELETE FROM horarios WHERE turma_id = %s", (turma_id,))
-
-    # Gera 6 aulas aleatórias para cada dia da semana
+    # Limpar horários anteriores da sala
+    cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
     for dia in dias_semana:
-        aulas_do_dia = random.sample(materias, 6)
+        aulas_do_dia = random.sample(materias, 6)  # 6 matérias por dia
         for i, materia in enumerate(aulas_do_dia, start=1):
-            cur.execute("""
-                INSERT INTO horarios (turma_id, dia_semana, aula_numero, materia)
-                VALUES (%s, %s, %s, %s)
-            """, (turma_id, dia, i, materia))
+            cur.execute(
+                "INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia) VALUES (%s, %s, %s, %s)",
+                (sala_id, dia, i, materia)
+            )
 
     mysql.connection.commit()
     cur.close()
 
     flash('Horário gerado com sucesso!', 'success')
-    return redirect(url_for('routes.exibir_turmas_para_geracao'))
+    return redirect(url_for('routes.exibir_salas_para_geracao'))
 
+
+# 📥 Cadastrar sala
+@routes.route('/salas/cadastrar', methods=['GET', 'POST'])
+@login_obrigatorio
+@somente_master
+def cadastrar_sala():
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    if request.method == 'POST':
+        nome = request.form['nome'].strip()
+        ano = request.form['ano'].strip()
+        capacidade = request.form['capacidade'].strip()
+
+        # Verifica duplicidade
+        cur.execute("SELECT * FROM salas WHERE nome = %s", (nome,))
+        if cur.fetchone():
+            flash('Já existe uma sala com esse nome!', 'danger')
+            return redirect(url_for('routes.cadastrar_sala'))
+
+        cur.execute("INSERT INTO salas (nome, ano, capacidade) VALUES (%s, %s, %s)", (nome, ano, capacidade))
+        mysql.connection.commit()
+        cur.close()
+        flash("Sala cadastrada com sucesso!", "success")
+        return redirect(url_for('routes.gerenciar_salas'))
+
+    # 🔹 Ano padrão atual
+    ano_padrao = datetime.now().year
+    return render_template('salas/cadastrar_sala.html', ano_padrao=ano_padrao)
+
+@routes.route('/salas/<int:sala_id>/alunos')
+@login_obrigatorio
+def visualizar_alunos_da_sala(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Busca nome da sala
+    cur.execute("SELECT nome FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+
+    if not sala:
+        flash("Sala não encontrada!", "danger")
+        return redirect(url_for('routes.gerenciar_salas'))
+
+    # Busca alunos da sala
+    cur.execute("SELECT * FROM alunos WHERE sala_id = %s", (sala_id,))
+    alunos = cur.fetchall()
+    cur.close()
+
+    return render_template('salas/visualizar_alunos.html', sala=sala, alunos=alunos)
+
+
+
+# 📋 Listar salas com quantidade de alunos
+@routes.route('/salas')
+@login_obrigatorio
+def gerenciar_salas():
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
+    cur.close()
+    return render_template('salas/gerenciar_salas.html', salas=salas)
+
+
+
+# ✏️ Editar sala
+@routes.route('/salas/editar/<int:sala_id>', methods=['GET', 'POST'])
+def editar_sala(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    if request.method == 'POST':
+        nome = request.form['nome']
+        ano = request.form['ano']
+        capacidade = request.form['capacidade']
+
+        cur.execute("UPDATE salas SET nome=%s, ano=%s, capacidade=%s WHERE id=%s", (nome, ano, capacidade, sala_id))
+        mysql.connection.commit()
+        flash("Sala atualizada com sucesso!", "success")
+        return redirect(url_for('routes.gerenciar_salas'))
+
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+    return render_template('editar_sala.html', sala=sala)
+
+
+# 🗑️ Excluir sala
+@routes.route('/salas/excluir/<int:sala_id>', methods=['POST'])
+def excluir_sala(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM salas WHERE id = %s", (sala_id,))
+    mysql.connection.commit()
+    flash("Sala excluída!", "danger")
+    return redirect(url_for('routes.gerenciar_salas'))

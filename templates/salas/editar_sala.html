@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>✏️ Editar Sala</h2>
+
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Nome da Sala</label>
+            <input 
+                type="text" 
+                class="form-control" 
+                name="nome" 
+                value="{{ sala.nome }}" 
+                required 
+                pattern="^\S{3,}$" 
+                title="Mínimo 3 caracteres, sem espaços.">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Ano Letivo</label>
+            <input 
+                type="text" 
+                class="form-control" 
+                name="ano" 
+                value="{{ sala.ano }}" 
+                required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Capacidade Máxima</label>
+            <input 
+                type="number" 
+                class="form-control" 
+                name="capacidade" 
+                value="{{ sala.capacidade }}" 
+                min="1" 
+                required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">💾 Salvar</button>
+        <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-secondary">🔙 Voltar</a>
+    </form>
+</div>
+{% endblock %}

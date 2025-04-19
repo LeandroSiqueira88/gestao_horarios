@@ -2,31 +2,31 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2>{{ 'Editar Usuário' if editar else 'Cadastrar Novo Usuário' }}</h2>
+    <h2>{{ '✏️ Editar Usuário' if editar else '➕ Cadastrar Novo Usuário' }}</h2>
 
     <form method="POST">
         <div class="mb-3">
-            <label>Nome:</label>
+            <label for="nome">Nome:</label>
             <input type="text" name="nome" class="form-control" required value="{{ usuario.nome if editar else '' }}">
         </div>
         <div class="mb-3">
-            <label>Email:</label>
+            <label for="email">Email:</label>
             <input type="email" name="email" class="form-control" required value="{{ usuario.email if editar else '' }}">
         </div>
         {% if not editar %}
         <div class="mb-3">
-            <label>Senha:</label>
+            <label for="senha">Senha:</label>
             <input type="password" name="senha" class="form-control" required>
         </div>
         {% endif %}
         <div class="mb-3">
-            <label>Perfil:</label>
+            <label for="perfil">Perfil:</label>
             <select name="perfil" class="form-control" required>
                 <option value="usuario" {% if editar and usuario.perfil == 'usuario' %}selected{% endif %}>Usuário</option>
                 <option value="master" {% if editar and usuario.perfil == 'master' %}selected{% endif %}>Master</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary">Salvar</button>
+        <button type="submit" class="btn btn-primary">💾 Salvar</button>
         <a href="{{ url_for('routes.gerenciar_usuarios') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>

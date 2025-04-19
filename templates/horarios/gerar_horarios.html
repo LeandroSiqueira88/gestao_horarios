@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Gerar Horários{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📆 Gerar Horários por Sala</h2>
+
+    <table class="table table-bordered mt-3">
+        <thead class="table-light">
+            <tr>
+                <th>Sala</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sala in salas %}
+            <tr>
+                <td>{{ sala.nome }}</td>
+                <td>
+                    <a href="{{ url_for('routes.gerar_horario', sala_id=sala.id) }}" class="btn btn-primary">⚙️ Gerar Horário</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

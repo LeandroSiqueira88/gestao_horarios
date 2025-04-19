@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Gerenciar Usuários</h2>
-    <a href="{{ url_for('routes.cadastrar_usuario') }}" class="btn btn-success mb-3">Novo Usuário</a>
+<div class="container mt-4">
+    <h2>👥 Gerenciar Usuários</h2>
+    <a href="{{ url_for('routes.cadastrar_usuario') }}" class="btn btn-success mb-3">➕ Novo Usuário</a>
 
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
             <tr>
                 <th>Nome</th>
                 <th>Email</th>
@@ -21,9 +21,9 @@
                 <td>{{ usuario[2] }}</td>
                 <td>{{ usuario[4] }}</td>
                 <td>
-                    <a href="{{ url_for('routes.editar_usuario', id=usuario[0]) }}" class="btn btn-primary btn-sm">Editar</a>
+                    <a href="{{ url_for('routes.editar_usuario', id=usuario[0]) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
                     <form action="{{ url_for('routes.excluir_usuario', id=usuario[0]) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Excluir este usuário?')">Excluir</button>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Excluir este usuário?')">🗑️ Excluir</button>
                     </form>
                 </td>
             </tr>

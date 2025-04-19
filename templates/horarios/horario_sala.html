@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Horário da Sala{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📋 Horário da Sala {{ sala.nome }}</h2>
+    <a href="{{ url_for('routes.listar_turmas') }}" class="btn btn-secondary mb-3">🔙 Voltar</a>
+
+    <table class="table table-bordered text-center">
+        <thead class="table-light">
+            <tr>
+                <th>Dia</th>
+                {% for i in range(1, 7) %}
+                    <th>{{ i }}ª Aula</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for dia, aulas in horario.items() %}
+            <tr>
+                <td class="fw-bold">{{ dia }}</td>
+                {% for materia in aulas %}
+                    <td>{{ materia }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

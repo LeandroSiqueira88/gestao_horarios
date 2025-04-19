@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <h2 class="text-center mb-4">Cadastro</h2>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="nome" class="form-label">Nome:</label>
+            <input type="text" class="form-control" id="nome" name="nome" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email:</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+        <div class="mb-3">
+            <label for="senha" class="form-label">Senha:</label>
+            <input type="password" class="form-control" id="senha" name="senha" required>
+        </div>
+        <div class="mb-3">
+            <label for="perfil" class="form-label">Perfil:</label>
+            <select class="form-select" id="perfil" name="perfil">
+                <option value="usuario">Usuário</option>
+                <option value="master">Master</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Cadastrar</button>
+    </form>
+    <div class="text-center mt-3">
+        <a href="{{ url_for('routes.login') }}">Já tem uma conta? Faça login</a>
+    </div>
+</div>
+{% endblock %}

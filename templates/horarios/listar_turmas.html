@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Visualização de Horários{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📚 Visualização de Horários</h2>
+    <p>Você pode acessar os horários diretamente por sala.</p>
+
+    <a href="{{ url_for('routes.exibir_salas_para_geracao') }}" class="btn btn-primary mt-2">👁️ Ver Salas</a>
+</div>
+{% endblock %}

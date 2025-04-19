@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Editar Professor{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>✏️ Editar Professor</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="card p-4 shadow">
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" name="nome" value="{{ professor.nome }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">CPF</label>
+            <input type="text" class="form-control" name="cpf" value="{{ professor.cpf }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Endereço</label>
+            <input type="text" class="form-control" name="endereco" value="{{ professor.endereco }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Telefone</label>
+            <input type="text" class="form-control" name="telefone" value="{{ professor.telefone }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email" value="{{ professor.email }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Especialidade</label>
+            <select class="form-control" name="especialidade" required>
+                {% for esp in [
+                    'Artes', 'Biologia', 'Educação Física', 'Filosofia', 'Física',
+                    'Geografia', 'História', 'Inglês', 'Matemática',
+                    'Língua Portuguesa', 'Química', 'Sociologia'] %}
+                    <option value="{{ esp }}" {% if professor.especialidade == esp %}selected{% endif %}>{{ esp }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observação</label>
+            <textarea class="form-control" name="observacao">{{ professor.observacao }}</textarea>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-secondary">❌ Cancelar</a>
+            <button type="submit" class="btn btn-success">💾 Salvar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
