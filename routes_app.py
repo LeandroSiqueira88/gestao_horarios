@@ -19,16 +19,6 @@ routes = Blueprint('routes', __name__)
 TURMAS = ["1ºA", "1ºB", "1ºC", "2ºA", "2ºB", "2ºC", "3ºA", "3ºB", "3ºC"]
 
 dias_da_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
-disciplinas = {
-    "Língua Portuguesa": 6,
-    "Matemática": 6,
-    "Ciências": 4,
-    "Geografia": 3,
-    "Língua Inglesa": 3,
-    "Arte": 2,
-    "Educação Física": 3,
-    "Filosofia": 3
-}
 
 # 🔹 Função para obter a conexão MySQL
 def get_mysql():
@@ -380,7 +370,7 @@ def cadastrar_usuario():
         flash("Usuário cadastrado com sucesso!", "success")
         return redirect(url_for('routes.gerenciar_usuarios'))
 
-    return render_template('cadastrar_usuario.html')
+    return render_template('usuarios/cadastrar_usuario.html')
 
 @routes.route('/usuarios/editar/<int:id>', methods=['GET', 'POST'])
 @login_obrigatorio
@@ -406,7 +396,8 @@ def editar_usuario(id):
     usuario = cur.fetchone()
     cur.close()
 
-    return render_template('cadastrar_usuario.html', usuario=usuario, editar=True)
+    return render_template('usuarios/cadastrar_usuario.html', usuario=usuario, editar=True)
+
 
 @routes.route('/usuarios/excluir/<int:id>', methods=['POST'])
 @login_obrigatorio

@@ -1,34 +1,74 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>👥 Gerenciar Usuários</h2>
-    <a href="{{ url_for('routes.cadastrar_usuario') }}" class="btn btn-success mb-3">➕ Novo Usuário</a>
+<style>
+    .btn-voltar {
+        background-color: #e0e0e0;
+        color: #000;
+    }
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-light">
-            <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Perfil</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for usuario in usuarios %}
-            <tr>
-                <td>{{ usuario[1] }}</td>
-                <td>{{ usuario[2] }}</td>
-                <td>{{ usuario[4] }}</td>
-                <td>
-                    <a href="{{ url_for('routes.editar_usuario', id=usuario[0]) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
-                    <form action="{{ url_for('routes.excluir_usuario', id=usuario[0]) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Excluir este usuário?')">🗑️ Excluir</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    .btn-voltar:hover {
+        background-color: #9c9a9a;
+        color: #000;
+    }
+
+    .btn-editar {
+        background-color: #f7e088;
+        color: #000;
+    }
+
+    .btn-editar:hover {
+        background-color: #f7fa4a;
+        color: #000;
+    }
+
+    .btn-excluir {
+        background-color: #e86e6e;
+        color: #fff;
+    }
+
+    .btn-excluir:hover {
+        background-color: #d43322;
+        color: #fff;
+    }
+
+    .table-header-azul {
+        background-color: #5BC0EB;
+        color: white;
+    }
+</style>
+
+<div class="container mt-4">
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mb-3">🔙 Voltar Painel Administrativo</a>
+    <h2 class="mb-4">👥 Gerenciar Usuários</h2>
+    <a href="{{ url_for('routes.cadastrar_usuario') }}" class="btn btn-primary mb-3">➕ Novo Usuário</a>
+
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-striped table-bordered text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Perfil</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario[1] }}</td>
+                    <td>{{ usuario[2] }}</td>
+                    <td>{{ usuario[4]|capitalize }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_usuario', id=usuario[0]) }}" class="btn btn-editar btn-sm">✏️ Editar</a>
+                        <form action="{{ url_for('routes.excluir_usuario', id=usuario[0]) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-excluir btn-sm" onclick="return confirm('Excluir este usuário?')">🗑️ Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

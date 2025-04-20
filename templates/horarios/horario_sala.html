@@ -2,42 +2,62 @@
 {% block title %}Horário da Sala{% endblock %}
 
 {% block content %}
+<style>
+    .btn-voltar {
+        background-color: #e0e0e0;
+        color: #000;
+    }
+
+    .btn-voltar:hover {
+        background-color: #9c9a9a;
+        color: #000;
+    }
+
+    .table-header-azul th {
+        background-color: #5BC0EB;
+        color: white;
+    }
+</style>
+
 <div class="container mt-4">
+    
     <h2>📋 Horário da Sala {{ sala.nome }}</h2>
-    <a href="{{ url_for('routes.listar_turmas') }}" class="btn btn-secondary mb-3">🔙 Voltar</a>
+    <a href="{{ url_for('routes.listar_turmas') }}" class="btn btn-voltar mb-3">🔙 Voltar</a>
 
-    <table class="table table-bordered text-center align-middle table-striped" style="background-color: #f9f9f9;">
-        <thead class="table-light">
-            <tr>
-                <th>Aula</th>
-                <th>Horário</th>
-                {% for dia in dias %}
-                    <th>{{ dia }}</th>
-                {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% set horarios = {
-                '1ª Aula': '07:00 – 07:50',
-                '2ª Aula': '07:50 – 08:40',
-                '3ª Aula': '08:40 – 09:30',
-                '🧃 Intervalo': '09:30 – 09:50',
-                '4ª Aula': '09:50 – 10:40',
-                '5ª Aula': '10:40 – 11:30',
-                '6ª Aula': '11:30 – 12:20'
-            } %}
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-striped table-bordered text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Aula</th>
+                    <th>Horário</th>
+                    {% for dia in dias %}
+                        <th>{{ dia }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% set horarios = {
+                    '1ª Aula': '07:00 – 07:50',
+                    '2ª Aula': '07:50 – 08:40',
+                    '3ª Aula': '08:40 – 09:30',
+                    '🧃 Intervalo': '09:30 – 09:50',
+                    '4ª Aula': '09:50 – 10:40',
+                    '5ª Aula': '10:40 – 11:30',
+                    '6ª Aula': '11:30 – 12:20'
+                } %}
 
-            {% for aula, colunas in grade.items() %}
-            <tr>
-                <td class="fw-bold">{{ aula }}</td>
-                <td><small>{{ horarios[aula] }}</small></td>
-                {% for dia in dias %}
-                    {% set conteudo = colunas[dia] %}
-                    <td style="font-size: 20px;">{{ conteudo|safe }}</td>
+                {% for aula, colunas in grade.items() %}
+                <tr>
+                    <td class="fw-bold">{{ aula }}</td>
+                    <td><small>{{ horarios[aula] }}</small></td>
+                    {% for dia in dias %}
+                        {% set conteudo = colunas[dia] %}
+                        <td style="font-size: 20px;">{{ conteudo|safe }}</td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -2,31 +2,50 @@
 {% block title %}Visualização de Horários{% endblock %}
 
 {% block content %}
+<style>
+    .btn-voltar {
+        background-color: #e0e0e0;
+        color: #000;
+    }
+
+    .btn-voltar:hover {
+        background-color: #9c9a9a;
+        color: #000;
+    }
+
+    .table-header-azul {
+        background-color: #5BC0EB;
+        color: white;
+    }
+</style>
+
 <div class="container mt-4">
     <h2>📚 Visualização de Horários</h2>
     <p class="mb-4">Você pode acessar os horários diretamente por sala.</p>
 
-    <table class="table table-striped">
-        <thead class="table-light">
-            <tr>
-                <th>Sala</th>
-                <th>Ano</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sala in salas %}
-            <tr>
-                <td>{{ sala.nome }}</td>
-                <td>{{ sala.ano }}</td>
-                <td>
-                    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👁️ Ver Horário</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-striped table-bordered text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Sala</th>
+                    <th>Ano</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sala in salas %}
+                <tr>
+                    <td>{{ sala.nome }}</td>
+                    <td>{{ sala.ano }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-primary btn-sm">👁️ Ver Horário</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mt-3">🔙 Voltar ao Painel</a>
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mt-3">🔙 Voltar ao Painel</a>
 </div>
 {% endblock %}

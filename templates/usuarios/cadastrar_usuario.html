@@ -22,7 +22,8 @@
         <div class="mb-3">
             <label for="perfil">Perfil:</label>
             <select name="perfil" class="form-control" required>
-                <option value="usuario" {% if editar and usuario.perfil == 'usuario' %}selected{% endif %}>Usuário</option>
+                <option value="assistente" {% if editar and usuario.perfil == 'assistente' %}selected{% endif %}>Assistente</option>
+                <option value="administrativo" {% if editar and usuario.perfil == 'administrativo' %}selected{% endif %}>Administrativo</option>
                 <option value="master" {% if editar and usuario.perfil == 'master' %}selected{% endif %}>Master</option>
             </select>
         </div>

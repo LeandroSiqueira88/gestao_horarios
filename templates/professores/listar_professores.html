@@ -3,49 +3,54 @@
 
 {% block content %}
 <div class="container mt-4">
-    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-secondary mb-3">🔙 Voltar Painel Administrativo</a>
-    <h2>👨‍🏫 Lista de Professores</h2>
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mb-3">🔙 Voltar Painel Administrativo</a>
+    <h2 class="mb-4">👨‍🏫 Lista de Professores</h2>
 
     <a href="{{ url_for('routes.cadastrar_professor') }}" class="btn btn-primary mb-3">➕ Cadastrar Novo Professor</a>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-light">
-            <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Endereço</th>
-                <th>Telefone</th>
-                <th>Email</th>
-                <th>Especialidade</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for professor in professores %}
-            <tr>
-                <td>{{ professor.nome }}</td>
-                <td>{{ professor.cpf }}</td>
-                <td>{{ professor.endereco }}</td>
-                <td>{{ professor.telefone }}</td>
-                <td>{{ professor.email }}</td>
-                <td>{{ professor.especialidade }}</td>
-                <td>
-                    <a href="{{ url_for('routes.editar_professor', id=professor.id) }}" class="btn btn-warning btn-sm">✏️ Editar</a>
-                    <form method="POST" action="{{ url_for('routes.excluir_professor', id=professor.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">🗑️ Excluir</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-striped table-bordered text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Endereço</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                    <th>Especialidade</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for professor in professores %}
+                <tr>
+                    <td>{{ professor.nome }}</td>
+                    <td>{{ professor.cpf }}</td>
+                    <td>{{ professor.endereco }}</td>
+                    <td>{{ professor.telefone }}</td>
+                    <td>{{ professor.email }}</td>
+                    <td>{{ professor.especialidade }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_professor', id=professor.id) }}" class="btn btn-editar btn-sm">✏️ Editar</a>
+                        <form method="POST" action="{{ url_for('routes.excluir_professor', id=professor.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-excluir btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">🗑️ Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}
