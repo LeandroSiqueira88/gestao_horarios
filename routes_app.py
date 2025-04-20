@@ -25,10 +25,17 @@ def get_mysql():
     from app import mysql
     return mysql
 
-# 🔹 ROTA PRINCIPAL
+# 🔹 ROTA PRINCIPAL – Escolha entre Master e Usuário
 @routes.route('/')
 def index():
     return render_template('index.html')
+
+
+# Rota exclusiva para Master
+@routes.route('/master', methods=['GET', 'POST'])
+def acesso_master():
+    return render_template('usuarios/login_master.html')
+
 
 # 🔹 LOGIN
 @routes.route('/login', methods=['GET', 'POST'])
@@ -48,12 +55,18 @@ def login():
             session['usuario_id'] = usuario[0]
             session['usuario_nome'] = usuario[1]
             session['usuario_perfil'] = usuario[4]
+
             flash("Login realizado com sucesso!", "success")
-            return redirect(url_for('routes.dashboard'))  # ou qualquer página protegida
+
+            if usuario[4] == 'master':
+                return redirect(url_for('routes.admin'))
+            else:
+                return redirect(url_for('routes.dashboard'))
         else:
             flash("E-mail ou senha inválidos", "danger")
 
-    return render_template('login.html')
+    return render_template('usuarios/login_publico.html')
+
 
 @routes.route('/logout')
 def logout():
@@ -65,14 +78,17 @@ def logout():
 @routes.route('/dashboard')
 @login_obrigatorio
 def dashboard():
+    print("Perfil logado:", session.get('usuario_perfil'))
     return render_template('dashboard.html')
+
 
 # 🔹 ADMINISTRADOR (Apenas para "master")
 @routes.route('/admin')
 @login_obrigatorio
 @somente_master
 def admin():
-    return render_template('admin.html')
+    return render_template('usuarios/admin.html')
+
 
 # 🔹 CADASTRO DE USUÁRIO
 @routes.route('/cadastro', methods=['GET', 'POST'])
@@ -346,6 +362,7 @@ def gerenciar_usuarios():
     usuarios = cur.fetchall()
     cur.close()
     return render_template('usuarios/gerenciar_usuarios.html', usuarios=usuarios)
+
 
 
 @routes.route('/usuarios/cadastrar', methods=['GET', 'POST'])

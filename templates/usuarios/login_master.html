@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <h2 class="text-center mb-4">👑 Acesso Master</h2>
+
+    <form method="POST" action="{{ url_for('routes.login') }}">
+        <input type="email" name="email" class="form-control mb-3" placeholder="Email" required>
+        <input type="password" name="senha" class="form-control mb-3" placeholder="Senha" required>
+        <button type="submit" class="btn btn-primary w-100">Entrar como Master</button>
+    </form>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('routes.cadastrar_usuario') }}" class="btn btn-success">➕ Cadastrar Usuário</a>
+    </div>
+</div>
+{% endblock %}
