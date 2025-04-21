@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Editar Grade de Horário{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-voltar mb-3">🔙 Voltar</a>
+    <h2 class="mb-4">✏️ Editar Grade da Sala: {{ sala.nome }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="table-responsive rounded shadow-sm border">
+            <table class="table table-striped table-bordered text-center align-middle mb-0">
+                <thead class="table-header-azul">
+                    <tr>
+                        <th>Dia da Semana</th>
+                        <th>Nº Aula</th>
+                        <th>Matéria</th>
+                        <th>Professor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aula in grade %}
+                    <tr>
+                        <td>
+                            <input type="hidden" name="horario_id_{{ loop.index }}" value="{{ aula.id }}">
+                            <input type="text" class="form-control" value="{{ aula.dia_semana }}" disabled>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" value="{{ aula.aula_numero }}ª" disabled>
+                        </td>
+                        <td>
+                            <input type="text" name="materia_{{ loop.index }}" class="form-control" value="{{ aula.materia }}">
+                        </td>
+                        <td>
+                            <select name="professor_id_{{ loop.index }}" class="form-select">
+                                {% for prof in professores %}
+                                <option value="{{ prof.id }}" {% if prof.nome == aula.professor %}selected{% endif %}>
+                                    {{ prof.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <input type="hidden" name="total" value="{{ grade|length }}">
+        <button type="submit" class="btn btn-primary mt-4">💾 Salvar Alterações</button>
+    </form>
+</div>
+{% endblock %}

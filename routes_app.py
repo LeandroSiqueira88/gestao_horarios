@@ -787,6 +787,7 @@ def gerenciar_salas():
 
 # ✏️ Editar sala
 @routes.route('/salas/editar/<int:sala_id>', methods=['GET', 'POST'])
+@login_obrigatorio
 def editar_sala(sala_id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -796,14 +797,24 @@ def editar_sala(sala_id):
         ano = request.form['ano']
         capacidade = request.form['capacidade']
 
-        cur.execute("UPDATE salas SET nome=%s, ano=%s, capacidade=%s WHERE id=%s", (nome, ano, capacidade, sala_id))
+        cur.execute("""
+            UPDATE salas SET nome=%s, ano=%s, capacidade=%s WHERE id=%s
+        """, (nome, ano, capacidade, sala_id))
         mysql.connection.commit()
+        cur.close()
         flash("Sala atualizada com sucesso!", "success")
         return redirect(url_for('routes.gerenciar_salas'))
 
     cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
     sala = cur.fetchone()
-    return render_template('editar_sala.html', sala=sala)
+    cur.close()
+
+    if not sala:
+        flash("Sala não encontrada!", "danger")
+        return redirect(url_for('routes.gerenciar_salas'))
+
+    return render_template('salas/editar_sala.html', sala=sala)
+
 
 # 🗑️ Excluir sala
 @routes.route('/salas/excluir/<int:sala_id>', methods=['POST'])
@@ -1173,3 +1184,83 @@ def exibir_exportar_usuarios():
 
 
 
+@routes.route('/horario/sala/<int:sala_id>/editar')
+@login_obrigatorio
+def editar_grade_sala(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Dados da sala
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+
+    # Lista de professores e matérias
+    cur.execute("SELECT id, nome, especialidade FROM professores")
+    professores = cur.fetchall()
+
+    # Grade de horário atual
+    cur.execute("""
+        SELECT h.*, p.nome AS professor_nome
+        FROM horarios h
+        LEFT JOIN professores p ON h.professor_id = p.id
+        WHERE h.sala_id = %s
+        ORDER BY
+            FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
+            h.aula_numero
+    """, (sala_id,))
+    horarios = cur.fetchall()
+
+    cur.close()
+    return render_template('horarios/editar_grade.html', sala=sala, horarios=horarios, professores=professores)
+
+@routes.route('/editar_grade/<int:sala_id>', methods=['GET', 'POST'])
+@login_obrigatorio
+@somente_master
+def editar_grade(sala_id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    if request.method == 'POST':
+        # Apaga os horários antigos dessa sala
+        cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
+        mysql.connection.commit()
+
+        # Percorre os novos dados enviados no formulário
+        for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']:
+            for i in range(1, 7):  # 1ª até 6ª aula
+                materia = request.form.get(f'{dia}_{i}_materia')
+                professor = request.form.get(f'{dia}_{i}_professor')
+
+                if materia and professor:
+                    cur.execute("""
+                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (sala_id, dia, i, materia, professor))
+        mysql.connection.commit()
+        cur.close()
+        flash("Grade atualizada com sucesso!", "success")
+        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
+
+    # GET: carregar grade atual para edição
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+
+    cur.execute("""
+        SELECT * FROM horarios WHERE sala_id = %s
+    """, (sala_id,))
+    horarios_raw = cur.fetchall()
+
+    # Agrupa por dia e aula
+    horario = {dia: {i: {'materia': '', 'professor': ''} for i in range(1, 7)} for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']}
+    for h in horarios_raw:
+        horario[h['dia_semana']][h['aula_numero']] = {
+            'materia': h['materia'],
+            'professor': h['professor']
+        }
+
+    # Buscar todos os professores para o select
+    cur.execute("SELECT nome FROM professores ORDER BY nome")
+    professores = [row['nome'] for row in cur.fetchall()]
+    cur.close()
+
+    return render_template('horarios/editar_grade.html', sala=sala, horario=horario, professores=professores)
