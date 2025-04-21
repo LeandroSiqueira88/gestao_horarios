@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Exportar Usuários{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mt-3">🔙 Voltar</a>
+    <h2 class="mb-4 text-center">📥 Exportar Usuários</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form method="GET" action="{{ url_for('routes.exportar_usuarios') }}">
+                <div class="mb-3">
+                    <label for="perfil" class="form-label">Filtrar por Perfil:</label>
+                    <select name="perfil" id="perfil" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="assistente">Assistente</option>
+                        <option value="administrativo">Administrativo</option>
+                        <option value="master">Master</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">📄 Gerar PDF</button>
+            </form>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

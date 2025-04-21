@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Exportar Grade por Professor{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mb-3">🔙 Voltar Painel</a>
+    <h2 class="mb-4 text-center">📘 Exportar Grade de Horários por Professor</h2>
+
+    <form method="GET" action="{{ url_for('routes.exportar_grade_professores') }}" target="_blank" class="w-50 mx-auto">
+        <div class="mb-3">
+            <label for="professor_id" class="form-label fw-bold">Selecione o Professor (opcional):</label>
+            <select class="form-select" name="professor_id" id="professor_id">
+                <option value="">📄 Todos os Professores</option>
+                {% for professor in professores %}
+                    <option value="{{ professor.id }}">{{ professor.nome }} - {{ professor.especialidade }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-dark w-100">📥 Gerar PDF</button>
+    </form>
+</div>
+{% endblock %}

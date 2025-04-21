@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Exportar Grade por Sala{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mb-3">🔙 Voltar Painel</a>
+    <h2 class="mb-4 text-center">📘 Exportar Grade de Horários por Sala</h2>
+
+    <form method="GET" action="{{ url_for('routes.exportar_grade_salas') }}" target="_blank" class="w-50 mx-auto">
+        <div class="mb-3">
+            <label for="sala_id" class="form-label fw-bold">Selecione a Sala (opcional):</label>
+            <select class="form-select" name="sala_id" id="sala_id">
+                <option value="">📄 Todas as Salas</option>
+                {% for sala in salas %}
+                    <option value="{{ sala.id }}">{{ sala.nome }} ({{ sala.ano }}º Ano)</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success w-100">📥 Gerar PDF</button>
+    </form>
+</div>
+{% endblock %}

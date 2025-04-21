@@ -1,9 +1,62 @@
-<!-- templates/dashboard.html -->
-{% extends "base.html" %}
-
-{% block title %}Dashboard{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Painel Administrativo{% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Painel Administrativo</h1>
-    <p>Bem-vindo ao sistema de gestão de horários!</p>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">⚙️ Painel Administrativo</h2>
+
+    <div class="row text-center">
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-primary w-100">
+                👨‍🏫 Gerenciar Professores
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-success w-100">
+                🏫 Gerenciar Salas
+            </a>
+        </div>
+        {% if session['usuario_perfil'] == 'master' %}
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('routes.gerenciar_usuarios') }}" class="btn btn-warning w-100">
+                👥 Gerenciar Usuários
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="my-4">
+
+    <div class="card text-center">
+        <div class="card-body">
+            <h5 class="card-title">📥 Exportações</h5>
+            <p class="card-text">Escolha uma das opções abaixo para gerar um relatório em PDF:</p>
+
+        <div class="row text-center">
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('routes.exibir_exportar_alunos_por_sala') }}" class="btn btn-outline-primary w-100">
+                📥 Alunos por Sala
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('routes.exibir_exportar_grade_por_sala') }}" class="btn btn-outline-success w-100">
+                📥 Grade por Sala
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('routes.exibir_exportar_grade_por_professor') }}" class="btn btn-outline-dark w-100">
+                📥 Grade por Professor
+            </a>
+        </div>
+        {% if session['usuario_perfil'] == 'master' %}
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('routes.exibir_exportar_usuarios') }}" class="btn btn-outline-secondary w-100">
+                📥 Exportar Usuários
+            </a>
+        </div>
+        </div>
+    </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

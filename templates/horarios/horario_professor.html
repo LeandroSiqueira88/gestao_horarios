@@ -3,35 +3,37 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>🧑‍🏫 Horário do Professor: {{ professor.nome }}</h2>
+    <h2 class="mb-4 text-center">🧑‍🏫 Horário do Professor: {{ professor.nome }}</h2>
 
-    <table class="table table-bordered text-center mt-4">
-        <thead class="table-light">
-            <tr>
-                <th>Dia</th>
-                {% for i in range(1, 7) %}
-                    <th>{{ i }}ª Aula</th>
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-bordered table-striped text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Aula / Dia</th>
+                    {% for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
+                        <th>{{ dia }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in ['1ª Aula', '2ª Aula', '3ª Aula', '🧃 Intervalo', '4ª Aula', '5ª Aula', '6ª Aula'] %}
+                <tr>
+                    <th class="fw-bold">{{ linha }}</th>
+                    {% for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
+                        <td>
+                            {% if horario[dia][linha] %}
+                                {{ horario[dia][linha]|safe }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for dia, aulas in horario.items() %}
-            <tr>
-                <td><strong>{{ dia }}</strong></td>
-                {% for aula in aulas %}
-                    <td>
-                        {% if aula == '-' %}
-                            <span class="text-muted">-</span>
-                        {% else %}
-                            {{ aula }}
-                        {% endif %}
-                    </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 
-    <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-secondary mt-3">🔙 Voltar</a>
+    <a href="{{ url_for('routes.listar_professores') }}" class="btn btn-voltar mt-4">🔙 Voltar</a>
 </div>
 {% endblock %}
