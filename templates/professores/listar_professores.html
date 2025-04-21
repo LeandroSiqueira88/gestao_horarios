@@ -42,7 +42,10 @@
                     <td>{{ professor.email }}</td>
                     <td>{{ professor.especialidade }}</td>
                     <td>
+                        <a href="{{ url_for('routes.ver_aulas_professor', id=professor.id) }}" class="btn btn-info btn-sm">👁 Ver Aulas</a>
+
                         <a href="{{ url_for('routes.editar_professor', id=professor.id) }}" class="btn btn-editar btn-sm">✏️ Editar</a>
+                        
                         <form method="POST" action="{{ url_for('routes.excluir_professor', id=professor.id) }}" style="display:inline;">
                             <button type="submit" class="btn btn-excluir btn-sm" onclick="return confirm('Tem certeza que deseja excluir?')">🗑️ Excluir</button>
                         </form>

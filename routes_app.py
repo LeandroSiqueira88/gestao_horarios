@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 import MySQLdb.cursors
 from werkzeug.security import generate_password_hash, check_password_hash
-from extensoes import mysql  # ✅ aqui pegamos o mysql
+from extensoes import mysql 
 from auth import login_obrigatorio, somente_master
 import sqlite3
 from flask import Flask
@@ -9,8 +9,9 @@ from datetime import datetime
 import re
 from flask import make_response
 from fpdf import FPDF
-
-
+from flask import Response
+from collections import defaultdict
+import re
 
 app = Flask(__name__)
 # 🔹 Criando o Blueprint
@@ -234,6 +235,34 @@ def excluir_professor(id):
     cur.close()
     flash("Professor excluído com sucesso!", "success")
     return redirect(url_for('routes.listar_professores'))
+
+@routes.route('/professor/<int:id>/aulas')
+@login_obrigatorio
+def ver_aulas_professor(id):
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Buscar o professor
+    cur.execute("SELECT * FROM professores WHERE id = %s", (id,))
+    professor = cur.fetchone()
+
+    if not professor:
+        flash("Professor não encontrado!", "danger")
+        return redirect(url_for('routes.listar_professores'))
+
+    # Buscar as aulas cadastradas do professor
+    cur.execute("""
+        SELECT dia_semana, aula_numero, materia, s.nome AS sala_nome
+        FROM horarios h
+        JOIN salas s ON h.sala_id = s.id
+        WHERE h.professor_id = %s
+        ORDER BY FIELD(dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'), aula_numero
+    """, (id,))
+    aulas = cur.fetchall()
+    cur.close()
+
+    return render_template('professores/aulas_professor.html', professor=professor, aulas=aulas)
+
 
 
 # 🔹 CRUD Alunos (MySQL)
@@ -672,6 +701,17 @@ def visualizar_horario_professor(professor_id):
 
     return render_template('horarios/horario_professor.html', professor=professor, horario=grade)
 
+@routes.route('/professores/horarios')
+@login_obrigatorio
+def listar_professores_horarios():
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT id, nome, especialidade FROM professores ORDER BY nome")
+    professores = cur.fetchall()
+    cur.close()
+    return render_template('horarios/professores_horarios.html', professores=professores)
+
+
 
 
 # 📥 Cadastrar sala
@@ -780,6 +820,10 @@ from flask import Response, make_response
 from fpdf import FPDF
 from collections import defaultdict
 
+import re
+def limpar_html(texto):
+    return re.sub(r'<[^>]*>', '', texto or "")
+
 @routes.route('/exportar/alunos_por_sala')
 @login_obrigatorio
 def exportar_alunos_por_sala():
@@ -822,9 +866,10 @@ def exportar_alunos_por_sala():
             pdf.set_font("Arial", size=11)
         pdf.cell(0, 8, f" - {row['aluno']}", ln=True)
 
-    return Response(pdf.output(dest='S').encode('latin1'),
-                    mimetype='application/pdf',
-                    headers={"Content-Disposition": "attachment;filename=alunos_por_sala.pdf"})
+    return Response(pdf.output(dest='S'),
+                mimetype='application/pdf',
+                headers={"Content-Disposition": "attachment;filename=grade_salas.pdf"})
+
 
 
 
@@ -834,61 +879,66 @@ def exportar_alunos_por_sala():
 @routes.route('/exportar_grade_salas')
 @login_obrigatorio
 def exportar_grade_salas():
+    from fpdf import FPDF
+    from collections import defaultdict
+
     sala_id = request.args.get('sala_id')
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Buscar uma ou todas as salas
     if sala_id:
         cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
     else:
         cur.execute("SELECT * FROM salas ORDER BY nome")
     salas = cur.fetchall()
 
-    # Buscar os horários relacionados às salas
-    if sala_id:
-        cur.execute("""
-            SELECT h.*, s.nome AS sala_nome, p.nome AS professor_nome
-            FROM horarios h
-            JOIN salas s ON h.sala_id = s.id
-            JOIN professores p ON h.professor_id = p.id
-            WHERE s.id = %s
-            ORDER BY h.dia_semana, h.aula_numero
-        """, (sala_id,))
-    else:
-        cur.execute("""
-            SELECT h.*, s.nome AS sala_nome, p.nome AS professor_nome
-            FROM horarios h
-            JOIN salas s ON h.sala_id = s.id
-            JOIN professores p ON h.professor_id = p.id
-            ORDER BY s.nome, h.dia_semana, h.aula_numero
-        """)
+    consulta_horarios = """
+        SELECT h.*, s.nome AS sala_nome, p.nome AS professor_nome
+        FROM horarios h
+        JOIN salas s ON h.sala_id = s.id
+        LEFT JOIN professores p ON h.professor_id = p.id
+        {}
+        ORDER BY s.nome, 
+                 FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
+                 h.aula_numero
+    """.format(f"WHERE s.id = {sala_id}" if sala_id else "")
+    cur.execute(consulta_horarios)
     horarios = cur.fetchall()
     cur.close()
 
-    from fpdf import FPDF
-    from collections import defaultdict
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    titulo = "Grade de Horários por Sala" if not sala_id else f"Grade da Sala: {salas[0]['nome']}"
-    pdf.cell(200, 10, txt=titulo, ln=True, align='C')
-    pdf.ln(8)
-
-    horarios_por_sala = defaultdict(list)
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    aulas_por_sala = defaultdict(lambda: {dia: [''] * 6 for dia in dias})
     for h in horarios:
-        horarios_por_sala[h['sala_nome']].append(h)
+        texto = f"{h['materia']}\n({h['professor_nome'] or 'Sem prof'})"
+        aulas_por_sala[h['sala_nome']][h['dia_semana']][h['aula_numero'] - 1] = texto
 
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=10)
+
+    count = 0
     for sala in salas:
+        if count % 2 == 0:
+            pdf.add_page()
         nome = sala['nome']
-        pdf.set_font("Arial", style='B', size=11)
+        pdf.set_font("Arial", 'B', 12)
         pdf.cell(0, 10, f"Sala: {nome}", ln=True)
-        pdf.set_font("Arial", size=10)
-        for h in horarios_por_sala[nome]:
-            texto = f"{h['dia_semana']} - {h['aula_numero']}ª Aula: {h['materia']} (Prof: {h['professor_nome']})"
-            pdf.cell(0, 8, texto, ln=True)
-        pdf.ln(5)
+        pdf.set_font("Arial", size=9)
+
+        # Cabeçalho
+        pdf.cell(30, 8, "Dia", 1, 0, 'C')
+        for i in range(1, 7):
+            pdf.cell(40, 8, f"{i}ª Aula", 1, 0, 'C')
+        pdf.ln()
+
+        # Corpo
+        for dia in dias:
+            pdf.cell(30, 14, dia, 1)
+            for aula in aulas_por_sala[nome][dia]:
+                pdf.multi_cell(40, 7, aula, 1, 'L', max_line_height=pdf.font_size)
+            pdf.ln(0)
+        pdf.ln(8)
+        count += 1
 
     return Response(pdf.output(dest='S').encode('latin1'),
                     mimetype='application/pdf',
@@ -896,25 +946,23 @@ def exportar_grade_salas():
 
 
 
-
-
-
 # EXPORTAR GRADE DE PROFESSORES (geral ou de um específico)
 @routes.route('/exportar_grade_professores')
 @login_obrigatorio
 def exportar_grade_professores():
+    from fpdf import FPDF
+    from collections import defaultdict
+
     professor_id = request.args.get('professor_id')
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Buscar um ou todos os professores
     if professor_id:
         cur.execute("SELECT * FROM professores WHERE id = %s", (professor_id,))
     else:
         cur.execute("SELECT * FROM professores ORDER BY nome")
     professores = cur.fetchall()
 
-    # Buscar os horários com nome da sala
     if professor_id:
         cur.execute("""
             SELECT h.*, s.nome AS sala_nome
@@ -934,35 +982,42 @@ def exportar_grade_professores():
     horarios = cur.fetchall()
     cur.close()
 
-    from fpdf import FPDF
-    from collections import defaultdict
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    titulo = "Grade de Horários por Professor" if not professor_id else f"Grade do Professor: {professores[0]['nome']}"
-    pdf.cell(200, 10, txt=titulo, ln=True, align='C')
-    pdf.ln(8)
-
-    horarios_por_prof = defaultdict(list)
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    horario_por_prof = defaultdict(lambda: {dia: [''] * 6 for dia in dias})
     for h in horarios:
-        prof_nome = h.get('professor_nome') or professores[0]['nome']
-        horarios_por_prof[prof_nome].append(h)
+        prof = h.get('professor_nome') or professores[0]['nome']
+        texto = f"{h['materia']}\n({h['sala_nome']})"
+        horario_por_prof[prof][h['dia_semana']][h['aula_numero'] - 1] = texto
 
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=10)
+
+    count = 0
     for prof in professores:
+        if count % 2 == 0:
+            pdf.add_page()
         nome = prof['nome']
-        pdf.set_font("Arial", style='B', size=11)
+        pdf.set_font("Arial", 'B', 12)
         pdf.cell(0, 10, f"Professor: {nome}", ln=True)
-        pdf.set_font("Arial", size=10)
-        for h in horarios_por_prof[nome]:
-            texto = f"{h['dia_semana']} - {h['aula_numero']}ª Aula: {h['materia']} ({h['sala_nome']})"
-            pdf.cell(0, 8, texto, ln=True)
-        pdf.ln(5)
+        pdf.set_font("Arial", size=9)
+
+        pdf.cell(30, 8, "Dia", 1, 0, 'C')
+        for i in range(1, 7):
+            pdf.cell(40, 8, f"{i}ª Aula", 1, 0, 'C')
+        pdf.ln()
+
+        for dia in dias:
+            pdf.cell(30, 14, dia, 1)
+            for aula in horario_por_prof[nome][dia]:
+                pdf.multi_cell(40, 7, aula, 1, 'L', max_line_height=pdf.font_size)
+            pdf.ln(0)
+        pdf.ln(8)
+        count += 1
 
     return Response(pdf.output(dest='S').encode('latin1'),
                     mimetype='application/pdf',
                     headers={"Content-Disposition": "attachment;filename=grade_professores.pdf"})
-
 
 
 
@@ -999,20 +1054,6 @@ def exportar_usuarios():
     return Response(pdf.output(dest='S').encode('latin1'),
                     mimetype='application/pdf',
                     headers={"Content-Disposition": "attachment;filename=usuarios.pdf"})
-
-
-
-@routes.route('/exportar/alunos_por_sala_html')
-@login_obrigatorio
-def exibir_exportar_alunos_por_sala():
-    mysql = get_mysql()
-    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cur.execute("SELECT * FROM salas ORDER BY nome")
-    salas = cur.fetchall()
-    cur.close()
-    return render_template('exportar/alunos_por_sala.html', salas=salas)
-
-
 
 @routes.route('/exportar/grade_por_sala_html')
 @login_obrigatorio
@@ -1107,6 +1148,17 @@ def exibir_exportar_grade_por_professor():
     return render_template("exportar/grade_por_professor.html", professores=professores, professor=professor, horario=horario)
 
 
+
+
+@routes.route('/exportar/alunos_por_sala_html')
+@login_obrigatorio
+def exibir_exportar_alunos_por_sala():
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cur.execute("SELECT * FROM salas ORDER BY nome")
+    salas = cur.fetchall()
+    cur.close()
+    return render_template('exportar/alunos_por_sala.html', salas=salas)
 
 @routes.route('/exportar/usuarios_html')
 @login_obrigatorio
