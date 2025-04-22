@@ -1,36 +1,11 @@
-{% extends "base.html" %}
-
-{% block title %}Bem-vindo{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Bem-vindo à Gestão de Horários{% endblock %}
 
 {% block content %}
-<div class="container mt-5 text-center">
-    <h2 class="mb-4">🔐 Bem-vindo ao Sistema de Gestão de Horários</h2>
-    <p class="mb-4">Escolha seu tipo de acesso:</p>
-
-    <div class="row justify-content-center">
-        <!-- Botão Master primeiro -->
-        <div class="col-md-4 mb-3">
-            <div class="card border-dark">
-                <div class="card-body">
-                    <h4>Master</h4>
-                    <p class="text-muted">Acesso exclusivo para controle total do sistema</p>
-                    <a href="{{ url_for('routes.acesso_master') }}" class="btn btn-dark w-100">🔒 Entrar</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Botão Administrativo / Assistente depois -->
-        <div class="col-md-4 mb-3">
-            <div class="card border-primary">
-                <div class="card-body">
-                    <h4>Administrativo / Assistente</h4>
-                    <p class="text-muted">Acesso para gestão de alunos, professores e horários</p>
-                    <a href="{{ url_for('routes.login') }}" class="btn btn-primary w-100">👥 Entrar</a>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="container text-center mt-5">
+    
+    <h1 class="mt-4">Bem-vindo à Plataforma de Gestão de Horários</h1>
+    <p class="lead">Acesse o menu superior para começar</p>
+    <a href="{{ url_for('routes.login') }}" class="btn btn-success mt-3">🔐 Fazer Login</a>
 </div>
-
-
 {% endblock %}

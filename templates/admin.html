@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Administração{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-5">⚙️ Área Administrativa</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-5 mb-4 d-flex justify-content-center">
+            <a href="{{ url_for('routes.exibir_salas_para_geracao') }}" class="btn btn-success btn-lg px-2 py-2 w-100">
+                🧠 Gerar Horários
+            </a>
+        </div>
+        <div class="col-md-5 mb-4 d-flex justify-content-center">
+            <a href="{{ url_for('routes.gerenciar_usuarios') }}" class="btn btn-warning btn-lg px-5 py-2 w-100">
+                👥 Gerenciar Usuários
+            </a>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar btn-lg px-5 py-2">
+            📊 Voltar ao Painel
+        </a>
+    </div>
+</div>
+{% endblock %}

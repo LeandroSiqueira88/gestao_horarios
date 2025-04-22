@@ -7,6 +7,21 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
     <style>
+        body::before {
+            content: "";
+            background-image: url('{{ url_for('static', filename='img/logo.png') }}');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 800px;
+            opacity: 0.05;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
         .navbar-custom { background-color: #5BC0EB; }
         .navbar .nav-link {
             font-weight: bold;
@@ -18,47 +33,14 @@
             border-radius: 6px;
             color: #fff !important;
         }
-
-        .btn-voltar {
-            background-color: #e0e0e0;
-            color: #000;
-        }
-
-        .btn-voltar:hover {
-            background-color: #9c9a9a;
-            color: #000;
-        }
-
-        .btn-editar {
-            background-color: #f7e088;
-            color: #000;
-        }
-
-        .btn-editar:hover {
-            background-color: #f7fa4a;
-            color: #000;
-        }
-
-        .btn-excluir {
-            background-color: #e86e6e;
-            color: #fff;
-        }
-
-        .btn-excluir:hover {
-            background-color: #d43322;
-            color: #fff;
-        }
-
-        .table-header-azul th {
-            background-color: #5BC0EB !important;
-            color: white !important;
-        }
-
-        .table-custom {
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
+        .btn-voltar { background-color: #e0e0e0; color: #000; }
+        .btn-voltar:hover { background-color: #9c9a9a; color: #000; }
+        .btn-editar { background-color: #f7e088; color: #000; }
+        .btn-editar:hover { background-color: #f7fa4a; color: #000; }
+        .btn-excluir { background-color: #e86e6e; color: #fff; }
+        .btn-excluir:hover { background-color: #d43322; color: #fff; }
+        .table-header-azul th { background-color: #5BC0EB !important; color: white !important; }
+        .table-custom { border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .table-actions {
             white-space: nowrap;
             display: flex;
@@ -66,16 +48,13 @@
             justify-content: center;
             flex-wrap: wrap;
         }
-
         .btn-sm {
             padding: 6px 10px;
             font-size: 0.85rem;
         }
-
         td, th {
             vertical-align: middle !important;
         }
-
         .table td, .table th {
             word-break: break-word;
         }
@@ -149,6 +128,7 @@
                     </ul>
                 </li>
                 {% endif %}
+
                 {% endif %}
             </ul>
 

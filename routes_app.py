@@ -30,7 +30,10 @@ def get_mysql():
 # 🔹 ROTA PRINCIPAL – Escolha entre Master e Usuário
 @routes.route('/')
 def index():
+    if session.get('usuario_id'):
+        return redirect(url_for('routes.dashboard'))
     return render_template('index.html')
+
 
 
 # Rota exclusiva para Master
@@ -89,7 +92,8 @@ def dashboard():
 @login_obrigatorio
 @somente_master
 def admin():
-    return render_template('usuarios/admin.html')
+    return render_template('admin.html')
+
 
 
 # 🔹 CADASTRO DE USUÁRIO
