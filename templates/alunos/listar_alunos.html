@@ -2,19 +2,23 @@
 {% block title %}Lista de Alunos{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4 text-center">📋 Lista de Alunos</h2>
+<div class="container-fluid mt-4">
+    <h2 class="mb-4 text-center">👨‍🎓 Lista de Alunos</h2>
 
-    <div class="table-responsive rounded shadow-sm border">
-        <table id="tabela-alunos" class="table table-bordered table-striped text-center align-middle mb-0">
+    <div style="overflow-x: auto; width: 100%;">
+        <table id="tabela-alunos" class="table table-striped table-bordered text-center align-middle" style="min-width: 1200px;">
             <thead class="table-header-azul">
                 <tr>
                     <th>Nome</th>
                     <th>CPF</th>
                     <th>Email</th>
                     <th>Telefone</th>
+                    <th>Endereço</th>
+                    <th>Data de Nascimento</th>
                     <th>Sala</th>
-                    <th>Ações</th>
+                    {% if session['usuario_perfil'] in ['master', 'administrativo'] %}
+                        <th>Ações</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -24,38 +28,40 @@
                     <td>{{ aluno.cpf }}</td>
                     <td>{{ aluno.email }}</td>
                     <td>{{ aluno.telefone }}</td>
-                    <td>{{ aluno.sala_nome or '—' }}</td>
+                    <td>{{ aluno.endereco }}</td>
+                    <td>{{ aluno.data_nascimento|date }}</td>
+                    <td>{{ aluno.sala_nome or '---' }}</td>
+                    {% if session['usuario_perfil'] in ['master', 'administrativo'] %}
                     <td class="table-actions">
                         <a href="{{ url_for('routes.editar_aluno', id=aluno.id) }}" class="btn btn-editar btn-sm">✏️ Editar</a>
-                        <form action="{{ url_for('routes.excluir_aluno', id=aluno.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-excluir btn-sm" onclick="return confirm('Tem certeza que deseja excluir este aluno?')">🗑️ Excluir</button>
+                        <form method="POST" action="{{ url_for('routes.excluir_aluno', id=aluno.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-excluir btn-sm" onclick="return confirm('Deseja excluir este aluno?')">🗑️ Excluir</button>
                         </form>
                     </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mt-4">🔙 Voltar ao Painel</a>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         new DataTable('#tabela-alunos', {
+            scrollX: true,
+            responsive: false,
             language: {
                 search: "🔍 Buscar:",
                 lengthMenu: "Mostrar _MENU_ registros por página",
-                zeroRecords: "Nenhum resultado encontrado",
                 info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                infoEmpty: "Mostrando 0 a 0 de 0 registros",
-                infoFiltered: "(filtrado de _MAX_ registros totais)",
                 paginate: {
                     first: "Primeiro",
                     last: "Último",
                     next: "→",
                     previous: "←"
-                }
+                },
+                emptyTable: "Nenhum aluno encontrado"
             }
         });
     });

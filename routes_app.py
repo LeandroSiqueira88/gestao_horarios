@@ -142,8 +142,11 @@ def listar_professores():
 
 # 🔹 CADASTRAR PROFESSOR
 @routes.route('/cadastrar_professor', methods=['GET', 'POST'])
+@login_obrigatorio
 def cadastrar_professor():
-    mysql = get_mysql()
+    if session.get('usuario_perfil') not in ['master', 'administrativo']:
+        flash('Você não tem permissão para acessar esta página.', 'danger')
+        return redirect(url_for('routes.dashboard'))
 
     if request.method == 'POST':
         nome = request.form['nome']
@@ -681,42 +684,54 @@ def visualizar_horario_professor(professor_id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
+    # Buscar professor
     cur.execute("SELECT * FROM professores WHERE id = %s", (professor_id,))
     professor = cur.fetchone()
 
     if not professor:
         flash("Professor não encontrado!", "danger")
-        return redirect(url_for('routes.listar_professores'))
+        cur.close()
+        return redirect(url_for('routes.listar_professores_horarios'))
 
+    # Buscar aulas do professor
     cur.execute("""
         SELECT h.dia_semana, h.aula_numero, h.materia, s.nome AS sala_nome
         FROM horarios h
         JOIN salas s ON h.sala_id = s.id
         WHERE h.professor_id = %s
-        ORDER BY 
-            FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
-            h.aula_numero
+        ORDER BY FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'), h.aula_numero
     """, (professor_id,))
     resultados = cur.fetchall()
     cur.close()
 
+    # Preparar a grade
     dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
     linhas = ['1ª Aula', '2ª Aula', '3ª Aula', '🧃 Intervalo', '4ª Aula', '5ª Aula', '6ª Aula']
-
     grade = {dia: {linha: '' for linha in linhas} for dia in dias}
 
     for row in resultados:
         aula = row['aula_numero']
         dia = row['dia_semana']
         texto = f"{row['materia']}<br><small>{row['sala_nome']}</small>"
-
         linha = f"{aula}ª Aula"
-        grade[dia][linha] = texto
+
+        if linha in grade[dia]:  # Só adiciona se a linha existir
+            grade[dia][linha] = texto
 
     for dia in dias:
         grade[dia]['🧃 Intervalo'] = '🧃🍞 Intervalo'
 
-    return render_template('horarios/horario_professor.html', professor=professor, horario=grade)
+    total_aulas = len(resultados)
+
+    return render_template(
+    'horarios/horario_professor.html',
+    professor=professor,
+    horario=grade,
+    dias=dias,
+    linhas=linhas,
+    carga_horaria=len(resultados)
+)
+
 
 
 @routes.route('/professores/horarios')
