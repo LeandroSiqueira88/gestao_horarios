@@ -1,48 +1,12 @@
 {% extends 'base.html' %}
 
+{% block title %}Gerenciar Salas{% endblock %}
+
 {% block content %}
-<style>
-    .btn-voltar {
-        background-color: #e0e0e0;
-        color: #000;
-    }
-
-    .btn-voltar:hover {
-        background-color: #9c9a9a;
-        color: #000;
-    }
-
-    .btn-editar {
-        background-color: #f7e088;
-        color: #000;
-    }
-
-    .btn-editar:hover {
-        background-color: #f7fa4a;
-        color: #000;
-    }
-
-    .btn-excluir {
-        background-color: #e86e6e;
-        color: #fff;
-    }
-
-    .btn-excluir:hover {
-        background-color: #d43322;
-        color: #fff;
-    }
-
-    .table-header-azul {
-        background-color: #5BC0EB;
-        color: white;
-    }
-</style>
-
 <div class="container mt-4">
-    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mb-3">🔙 Voltar Painel Administrativo</a>
-    <h2 class="mb-4">📋 Gerenciar Salas Cadastradas</h2>
-    <a href="{{ url_for('routes.cadastrar_sala') }}" class="btn btn-primary mb-3">➕ Nova Sala</a>
+    <h2 class="text-center mb-4">🏫 Gerenciar Salas</h2>
 
+    {% if salas %}
     <div class="table-responsive rounded shadow-sm border">
         <table id="tabela-salas" class="table table-striped table-bordered text-center align-middle mb-0">
             <thead class="table-header-azul">
@@ -50,8 +14,7 @@
                     <th>Nome</th>
                     <th>Ano</th>
                     <th>Capacidade</th>
-                    <th>Alunos Cadastrados</th>
-                    <th>Vagas</th>
+                    <th>Qtd. Alunos</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -62,20 +25,26 @@
                     <td>{{ sala.ano }}</td>
                     <td>{{ sala.capacidade }}</td>
                     <td>{{ sala.qtd_alunos }}</td>
-                    <td>{{ sala.capacidade - sala.qtd_alunos }}</td>
-                    <td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('routes.visualizar_alunos_da_sala', sala_id=sala.id) }}" class="btn btn-primary btn-sm">👥 Alunos</a>
+                        <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">📅 Horário</a>
                         <a href="{{ url_for('routes.editar_sala', sala_id=sala.id) }}" class="btn btn-editar btn-sm">✏️ Editar</a>
-                        <form method="POST" action="{{ url_for('routes.excluir_sala', sala_id=sala.id) }}" style="display:inline;">
-                            <button class="btn btn-excluir btn-sm" onclick="return confirm('Confirma exclusão da sala?')">🗑️ Excluir</button>
+                        <form method="POST" action="{{ url_for('routes.excluir_sala', sala_id=sala.id) }}" class="d-inline" onsubmit="return confirm('Tem certeza que deseja excluir esta sala?');">
+                            <button type="submit" class="btn btn-excluir btn-sm">🗑️ Excluir</button>
                         </form>
-                        <a href="{{ url_for('routes.visualizar_alunos_da_sala', sala_id=sala.id) }}" class="btn btn-info btn-sm">👥 Alunos</a>
-                        <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-primary btn-sm">📘 Ver Horário</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+    <div class="alert alert-warning text-center mt-4">
+        Nenhuma sala cadastrada.
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('routes.dashboard') }}" class="btn btn-voltar mt-4">🔙 Voltar ao Painel</a>
 </div>
 
 <script>
@@ -91,7 +60,7 @@
                     next: "→",
                     previous: "←"
                 },
-                emptyTable: "Nenhum registro encontrado"
+                emptyTable: "Nenhuma sala cadastrada"
             }
         });
     });

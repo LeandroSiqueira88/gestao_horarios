@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
     <meta charset="UTF-8">
     <title>{% block title %}Gestão de Horários{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
     <style>
-        .navbar-custom {
-            background-color: #5BC0EB;
-        }
+        .navbar-custom { background-color: #5BC0EB; }
         .navbar .nav-link {
             font-weight: bold;
             font-size: 22px;
@@ -20,14 +18,67 @@
             border-radius: 6px;
             color: #fff !important;
         }
-        .btn-voltar { background-color: #e0e0e0; color: #000; }
-        .btn-voltar:hover { background-color: #9c9a9a; color: #000; }
-        .btn-editar { background-color: #f7e088; color: #000; }
-        .btn-editar:hover { background-color: #f7fa4a; color: #000; }
-        .btn-excluir { background-color: #e86e6e; color: #fff; }
-        .btn-excluir:hover { background-color: #d43322; color: #fff; }
-        .table-header-azul th { background-color: #5BC0EB !important; color: white !important; }
-        .table-custom { border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+        .btn-voltar {
+            background-color: #e0e0e0;
+            color: #000;
+        }
+
+        .btn-voltar:hover {
+            background-color: #9c9a9a;
+            color: #000;
+        }
+
+        .btn-editar {
+            background-color: #f7e088;
+            color: #000;
+        }
+
+        .btn-editar:hover {
+            background-color: #f7fa4a;
+            color: #000;
+        }
+
+        .btn-excluir {
+            background-color: #e86e6e;
+            color: #fff;
+        }
+
+        .btn-excluir:hover {
+            background-color: #d43322;
+            color: #fff;
+        }
+
+        .table-header-azul th {
+            background-color: #5BC0EB !important;
+            color: white !important;
+        }
+
+        .table-custom {
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .table-actions {
+            white-space: nowrap;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+
+        td, th {
+            vertical-align: middle !important;
+        }
+
+        .table td, .table th {
+            word-break: break-word;
+        }
     </style>
 </head>
 <body>
@@ -43,54 +94,68 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
-                {% if session.get('usuario_perfil') in ['master', 'administrativo'] %}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="cadastroDropdown" role="button" data-bs-toggle="dropdown">
-                        ➕ Cadastro
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_aluno') }}">👨‍🎓 Alunos</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_professor') }}">👨‍🏫 Professores</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_sala') }}">🏫 Sala</a></li>
-                    </ul>
-                </li>
-                {% endif %}
+                {% if session.get('usuario_perfil') in ['master', 'administrativo', 'assistente'] %}
 
+                <!-- Alunos -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="gestaoDropdown" role="button" data-bs-toggle="dropdown">
-                        📚 Gestão
+                    <a class="nav-link dropdown-toggle" href="#" id="alunoDropdown" role="button" data-bs-toggle="dropdown">
+                        👨‍🎓 Alunos
                     </a>
                     <ul class="dropdown-menu">
                         {% if session.get('usuario_perfil') in ['master', 'administrativo'] %}
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_alunos') }}">👨‍🎓 Alunos</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores') }}">👨‍🏫 Professores</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_salas') }}">🏫 Salas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_aluno') }}">➕ Cadastrar</a></li>
                         {% endif %}
-                        {% if session.get('usuario_perfil') == 'master' %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_usuarios') }}">👥 Usuários</a></li>
-                        {% endif %}
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_alunos') }}">📋 Lista</a></li>
                     </ul>
                 </li>
 
+                <!-- Professores -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="horariosDropdown" role="button" data-bs-toggle="dropdown">
-                        🗓️ Horários
+                    <a class="nav-link dropdown-toggle" href="#" id="profDropdown" role="button" data-bs-toggle="dropdown">
+                        👨‍🏫 Professores
                     </a>
                     <ul class="dropdown-menu">
-                        {% if session.get('usuario_perfil') == 'master' %}
-                        <li><a class="dropdown-item" href="{{ url_for('routes.exibir_salas_para_geracao') }}">⚙️ Gerar Horários</a></li>
+                        {% if session.get('usuario_perfil') in ['master', 'administrativo'] %}
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_professor') }}">➕ Cadastrar</a></li>
                         {% endif %}
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_turmas') }}">📋 Por Sala</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores_horarios') }}">👨‍🏫 Por Professor</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores') }}">📋 Lista</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_professores_horarios') }}">🗓️ Horários</a></li>
                     </ul>
                 </li>
+
+                <!-- Salas -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="salaDropdown" role="button" data-bs-toggle="dropdown">
+                        🏫 Salas
+                    </a>
+                    <ul class="dropdown-menu">
+                        {% if session.get('usuario_perfil') in ['master', 'administrativo'] %}
+                        <li><a class="dropdown-item" href="{{ url_for('routes.cadastrar_sala') }}">➕ Cadastrar</a></li>
+                        {% endif %}
+                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_salas') }}">📋 Lista</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.listar_turmas') }}">🗓️ Horários</a></li>
+                    </ul>
+                </li>
+
+                <!-- Administração -->
+                {% if session.get('usuario_perfil') == 'master' %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                        ⚙️ Administração
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('routes.exibir_salas_para_geracao') }}">⚙️ Gerar Horários</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('routes.gerenciar_usuarios') }}">👥 Gerenciar Usuários</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+                {% endif %}
             </ul>
 
             <ul class="navbar-nav">
                 {% if session.get('usuario_nome') %}
                 <li class="nav-item text-light d-flex align-items-center me-3">
-                    👤 {{ session.get('usuario_nome') }} ({{ session.get('usuario_perfil')|capitalize }})
+                    👋 Olá <strong class="ms-1">{{ session.get('usuario_nome') }}</strong> ({{ session.get('usuario_perfil')|capitalize }})
                 </li>
                 <li class="nav-item">
                     <a class="nav-link text-light fw-semibold" href="{{ url_for('routes.logout') }}">🚪 Sair</a>

@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>➕ Cadastrar Nova Sala</h2>
+    <h2 class="text-center mb-4">🏫 Cadastrar Nova Sala</h2>
 
-    <form method="POST">
+    <form method="POST" class="p-4 rounded shadow-sm border bg-light">
         <!-- Nome da Sala -->
         <div class="mb-3">
             <label for="nome" class="form-label">Nome da Sala</label>
@@ -43,8 +43,10 @@
                 title="Máximo permitido: 40 alunos.">
         </div>
 
-        <button type="submit" class="btn btn-success">✅ Cadastrar Sala</button>
-        <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-secondary">🔙 Voltar</a>
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-voltar">🔙 Voltar</a>
+            <button type="submit" class="btn btn-success">✅ Cadastrar Sala</button>
+        </div>
     </form>
 </div>
 {% endblock %}

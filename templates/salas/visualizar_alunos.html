@@ -1,38 +1,69 @@
 {% extends 'base.html' %}
+{% block title %}Alunos da Sala{% endblock %}
 
 {% block content %}
+<style>
+    .table-header-azul th {
+        background-color: #5BC0EB;
+        color: white;
+    }
+</style>
+
 <div class="container mt-4">
-    <h2>👥 Alunos da Sala {{ sala.nome }}</h2>
+    <h2 class="mb-4">👥 Alunos da Sala {{ sala.nome }}</h2>
 
     {% if alunos %}
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Endereço</th>
-                <th>Telefone</th>
-                <th>Email</th>
-                <th>Data de Nascimento</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for aluno in alunos %}
-            <tr>
-                <td>{{ aluno.nome }}</td>
-                <td>{{ aluno.cpf }}</td>
-                <td>{{ aluno.endereco }}</td>
-                <td>{{ aluno.telefone }}</td>
-                <td>{{ aluno.email }}</td>
-                <td>{{ aluno.data_nascimento }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive rounded shadow-sm border">
+        <table id="tabela-alunos" class="table table-bordered table-striped text-center align-middle mb-0">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Endereço</th>
+                    <th>Telefone</th>
+                    <th>Email</th>
+                    <th>Data de Nascimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aluno in alunos %}
+                <tr>
+                    <td>{{ aluno.nome }}</td>
+                    <td>{{ aluno.cpf }}</td>
+                    <td>{{ aluno.endereco }}</td>
+                    <td>{{ aluno.telefone }}</td>
+                    <td>{{ aluno.email }}</td>
+                    <td>{{ aluno.data_nascimento }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
-        <div class="alert alert-warning mt-3">Nenhum aluno cadastrado nesta sala.</div>
+    <div class="alert alert-warning mt-4">
+        Nenhum aluno cadastrado nesta sala.
+    </div>
     {% endif %}
 
-    <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-secondary mt-3">🔙 Voltar</a>
+    <a href="{{ url_for('routes.gerenciar_salas') }}" class="btn btn-secondary mt-4">🔙 Voltar</a>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new DataTable('#tabela-alunos', {
+            language: {
+                search: "🔍 Buscar:",
+                lengthMenu: "Mostrar _MENU_ registros",
+                info: "Mostrando _START_ a _END_ de _TOTAL_ alunos",
+                paginate: {
+                    first: "Primeiro",
+                    last: "Último",
+                    next: "→",
+                    previous: "←"
+                },
+                emptyTable: "Nenhum aluno encontrado"
+            }
+        });
+    });
+</script>
 {% endblock %}

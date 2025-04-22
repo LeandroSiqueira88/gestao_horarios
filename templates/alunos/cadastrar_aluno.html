@@ -3,53 +3,98 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">➕ Cadastrar Novo Aluno</h2>
+    <h2>➕ Cadastrar Novo Aluno</h2>
 
-    <form method="POST" class="card p-4 shadow">
+    <form method="POST" class="p-4 rounded shadow-sm border bg-light">
         <div class="mb-3">
-            <label for="nome" class="form-label">Nome</label>
+            <label for="nome" class="form-label">Nome Completo</label>
             <input type="text" class="form-control" name="nome" required>
         </div>
 
         <div class="mb-3">
             <label for="cpf" class="form-label">CPF</label>
-            <input type="text" name="cpf" id="cpf" class="form-control" required placeholder="000.000.000-00">
+            <input type="text" class="form-control" name="cpf" id="cpf" placeholder="000.000.000-00" required>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const cpfInput = document.getElementById('cpf');
+          
+              cpfInput.addEventListener('input', function () {
+                let value = cpfInput.value.replace(/\D/g, '');
+          
+                if (value.length > 11) value = value.slice(0, 11);
+          
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+          
+                cpfInput.value = value;
+              });
+            });
+            </script>
 
         <div class="mb-3">
             <label for="endereco" class="form-label">Endereço</label>
-            <input type="text" class="form-control" name="endereco" required>
+            <input type="text" class="form-control" name="endereco">
         </div>
 
         <div class="mb-3">
             <label for="telefone" class="form-label">Telefone</label>
-            <input type="text" class="form-control" name="telefone" required>
+            <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(00) 00000-0000">
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const telInput = document.getElementById('telefone');
+            
+              telInput.addEventListener('input', function () {
+                let value = telInput.value.replace(/\D/g, '');
+            
+                if (value.length > 11) value = value.slice(0, 11);
+            
+                if (value.length <= 10) {
+                  value = value.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+                } else {
+                  value = value.replace(/^(\d{2})(\d{5})(\d{0,4})$/, '($1) $2-$3');
+                }
+            
+                telInput.value = value;
+              });
+            });
+            </script>
+            
 
         <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" name="email" required>
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" class="form-control" name="email">
         </div>
 
         <div class="mb-3">
             <label for="data_nascimento" class="form-label">Data de Nascimento</label>
-            <input type="date" class="form-control" name="data_nascimento" required>
+            <input type="date" class="form-control" name="data_nascimento">
         </div>
 
         <div class="mb-3">
             <label for="sala_id" class="form-label">Sala</label>
-            <select class="form-control" name="sala_id" required>
-                <option value="">Selecione...</option>
+            <select name="sala_id" class="form-select">
+                <option value="">-- Nenhuma --</option>
                 {% for sala in salas %}
                     <option value="{{ sala.id }}">{{ sala.nome }}</option>
                 {% endfor %}
             </select>
         </div>
 
-        <div class="d-flex justify-content-between">
-            <a href="{{ url_for('routes.listar_alunos') }}" class="btn btn-secondary">🔙 Cancelar</a>
-            <button type="submit" class="btn btn-success">✅ Cadastrar</button>
-        </div>
+        <button type="submit" class="btn btn-success">✅ Cadastrar Aluno</button>
+        <a href="{{ url_for('routes.listar_alunos') }}" class="btn btn-secondary">🔙 Voltar</a>
     </form>
 </div>
+
+<!-- Adiciona máscaras com JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#cpf').mask('000.000.000-00');
+        $('#telefone').mask('(00) 00000-0000');
+    });
+</script>
 {% endblock %}

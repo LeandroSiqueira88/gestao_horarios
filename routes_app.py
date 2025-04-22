@@ -375,11 +375,23 @@ def excluir_aluno(id):
     flash('Aluno excluído com sucesso!', 'success')
     return redirect(url_for('routes.listar_alunos'))
 
+
+
+from datetime import datetime
+
 @app.template_filter('date')
 def format_date(value, format='%d/%m/%Y'):
+    if isinstance(value, str):
+        try:
+            value = datetime.strptime(value, '%Y-%m-%d')
+        except ValueError:
+            return value
     if isinstance(value, datetime):
         return value.strftime(format)
     return value
+
+
+
 
 # 🔹 CRUD Usuários (MySQL)
 @routes.route('/usuarios')
@@ -466,7 +478,6 @@ def visualizar_horario_sala(sala_id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    # Busca informações da sala
     cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
     sala = cur.fetchone()
 
@@ -474,58 +485,37 @@ def visualizar_horario_sala(sala_id):
         flash("Sala não encontrada!", "danger")
         return redirect(url_for('routes.listar_turmas'))
 
-    # Busca o horário da sala
     cur.execute("""
-        SELECT dia_semana, aula_numero, materia
-        FROM horarios
-        WHERE sala_id = %s
-        ORDER BY 
-            FIELD(dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
-            aula_numero
-    """, (sala_id,))
+    SELECT h.dia_semana, h.aula_numero, h.materia, p.nome AS professor
+    FROM horarios h
+    LEFT JOIN professores p ON h.professor_id = p.id
+    WHERE h.sala_id = %s
+    ORDER BY 
+        FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
+        h.aula_numero
+""", (sala_id,))
+
     resultados = cur.fetchall()
     cur.close()
 
-    # Estrutura da grade: aulas x dias
     dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
     linhas = ['1ª Aula', '2ª Aula', '3ª Aula', '🧃 Intervalo', '4ª Aula', '5ª Aula', '6ª Aula']
-
     grade = {linha: {dia: '' for dia in dias} for linha in linhas}
 
     for linha in resultados:
         dia = linha['dia_semana']
         aula = linha['aula_numero']
         materia = linha['materia']
+        professor = linha.get('professor', '')
+        linha_key = f'{aula}ª Aula'
+        grade[linha_key][dia] = f"{materia}<br><small>{professor or '---'}</small>"
 
-        if aula == 4:
-            linha_key = '4ª Aula'
-        elif aula == 5:
-            linha_key = '5ª Aula'
-        elif aula == 6:
-            linha_key = '6ª Aula'
-        elif aula == 3:
-            linha_key = '3ª Aula'
-        elif aula == 2:
-            linha_key = '2ª Aula'
-        elif aula == 1:
-            linha_key = '1ª Aula'
-        else:
-            continue
-
-        # Ajustar posição considerando o intervalo
-        if aula >= 4:
-            linhas_index = aula  # já vai pra depois do intervalo
-            linha_key = f'{aula}ª Aula'
-        else:
-            linha_key = f'{aula}ª Aula'
-
-        grade[linha_key][dia] = materia
-
-    # Adiciona a linha de intervalo
     for dia in dias:
         grade['🧃 Intervalo'][dia] = '🧃🍞 Intervalo'
 
     return render_template('horarios/horario_sala.html', sala=sala, grade=grade, dias=dias)
+
+
 
 
 
@@ -558,6 +548,7 @@ def cadastrar_turma():
 # 🔹 GERAR HORÁRIOS
 @routes.route('/gerar_horarios')
 @login_obrigatorio
+@somente_master
 def exibir_salas_para_geracao():
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -566,18 +557,29 @@ def exibir_salas_para_geracao():
     cur.close()
     return render_template('horarios/gerar_horarios.html', salas=salas)
 
-@routes.route('/gerar_horario/<int:sala_id>')
+
+# ROTA: /gerar_horarios_global
+@routes.route('/gerar_horarios_global')
 @login_obrigatorio
-def gerar_horario(sala_id):
+@somente_master
+def gerar_horarios_global():
     mysql = get_mysql()
-    cur = mysql.connection.cursor()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    # Buscar salas e professores
+    cur.execute("SELECT * FROM salas")
+    salas = cur.fetchall()
+
+    cur.execute("SELECT id, nome, especialidade FROM professores")
+    professores = cur.fetchall()
+    cur.execute("DELETE FROM horarios")  # limpar antes de gerar tudo
 
     # Mapear professores por especialidade
-    cur.execute("SELECT nome, especialidade FROM professores")
-    prof_resultado = cur.fetchall()
-    mapa_professores = {prof[1]: prof[0] for prof in prof_resultado}
+    prof_por_esp = {}
+    for p in professores:
+        prof_por_esp.setdefault(p['especialidade'], []).append(p)
 
-    # Carga horária convertida em número de aulas semanais
+    # Carga horária por matéria
     carga_horaria = {
         "Língua Portuguesa": 6,
         "Matemática": 6,
@@ -595,50 +597,78 @@ def gerar_horario(sala_id):
 
     dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
     aulas_por_dia = 6
-    total_aulas = len(dias) * aulas_por_dia  # 30 aulas semanais
 
-    # Montar blocos de 2 aulas da mesma matéria
-    blocos = []
-    for materia, total in carga_horaria.items():
-        prof = mapa_professores.get(materia, "—")
-        materia_com_prof = f"{materia}<br><small>{prof}</small>"
+    # Inicializar a grade vazia de cada sala
+    grade_salas = {
+        sala['id']: {
+            dia: [None for _ in range(aulas_por_dia)] for dia in dias
+        } for sala in salas
+    }
 
-        # Dividir em blocos de 2 aulas
-        num_blocos = total // 2
-        for _ in range(num_blocos):
-            blocos.append([materia_com_prof, materia_com_prof])
-        
-        # Aula avulsa (se ímpar)
-        if total % 2 != 0:
-            blocos.append([materia_com_prof])
+    # Controle de ocupação de cada professor
+    prof_ocupado = {
+        p['id']: {
+            dia: [False for _ in range(aulas_por_dia)] for dia in dias
+        } for p in professores
+    }
 
-    # Embaralhar blocos sem quebrar pares
     import random
-    random.shuffle(blocos)
+    for sala in salas:
+        id_sala = sala['id']
+        blocos = []
 
-    # Achatar lista mantendo pares
-    aulas = [aula for bloco in blocos for aula in bloco]
+        for materia, total in carga_horaria.items():
+            profs = prof_por_esp.get(materia, [])
+            if not profs:
+                continue
 
-    # Limpar horários anteriores
-    cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
+            # blocos de 2 aulas
+            for _ in range(total // 2):
+                blocos.append((materia, 2))
+            if total % 2 != 0:
+                blocos.append((materia, 1))
 
-    index = 0
-    for dia in dias:
-        for numero in range(1, aulas_por_dia + 1):
-            if index < len(aulas):
-                cur.execute("""
-                    INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia)
-                    VALUES (%s, %s, %s, %s)
-                """, (sala_id, dia, numero, aulas[index]))
-                index += 1
+        random.shuffle(blocos)
+
+        for materia, tamanho_bloco in blocos:
+            alocado = False
+            profs = prof_por_esp.get(materia, [])
+
+            for dia in dias:
+                for i in range(aulas_por_dia - (tamanho_bloco - 1)):
+                    if all(grade_salas[id_sala][dia][i+j] is None for j in range(tamanho_bloco)):
+                        prof_escolhido = None
+                        for prof in profs:
+                            if all(not prof_ocupado[prof['id']][dia][i+j] for j in range(tamanho_bloco)):
+                                prof_escolhido = prof
+                                break
+
+                        for j in range(tamanho_bloco):
+                            grade_salas[id_sala][dia][i+j] = {
+                                'materia': materia,
+                                'professor_id': prof_escolhido['id'] if prof_escolhido else None
+                            }
+                            if prof_escolhido:
+                                prof_ocupado[prof_escolhido['id']][dia][i+j] = True
+                        alocado = True
+                        break
+                if alocado:
+                    break
+
+    # Inserir no banco
+    for sala_id, dias_semana in grade_salas.items():
+        for dia, aulas in dias_semana.items():
+            for i, slot in enumerate(aulas):
+                if slot:
+                    cur.execute("""
+                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor_id)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (sala_id, dia, i+1, slot['materia'], slot['professor_id']))
 
     mysql.connection.commit()
     cur.close()
-
-    flash("Horário gerado com sucesso!", "success")
+    flash("✅ Horários gerados com sucesso para todas as salas!", "success")
     return redirect(url_for('routes.exibir_salas_para_geracao'))
-
-
 
 
 @routes.route('/horarios/professor/<int:professor_id>')
@@ -654,17 +684,15 @@ def visualizar_horario_professor(professor_id):
         flash("Professor não encontrado!", "danger")
         return redirect(url_for('routes.listar_professores'))
 
-    especialidade = professor['especialidade']
-
     cur.execute("""
         SELECT h.dia_semana, h.aula_numero, h.materia, s.nome AS sala_nome
         FROM horarios h
         JOIN salas s ON h.sala_id = s.id
-        WHERE h.materia LIKE %s
+        WHERE h.professor_id = %s
         ORDER BY 
             FIELD(h.dia_semana, 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'),
             h.aula_numero
-    """, (f"{especialidade}%",))
+    """, (professor_id,))
     resultados = cur.fetchall()
     cur.close()
 
@@ -678,28 +706,14 @@ def visualizar_horario_professor(professor_id):
         dia = row['dia_semana']
         texto = f"{row['materia']}<br><small>{row['sala_nome']}</small>"
 
-        if aula == 4:
-            linha = '4ª Aula'
-        elif aula == 5:
-            linha = '5ª Aula'
-        elif aula == 6:
-            linha = '6ª Aula'
-        elif aula == 3:
-            linha = '3ª Aula'
-        elif aula == 2:
-            linha = '2ª Aula'
-        elif aula == 1:
-            linha = '1ª Aula'
-        else:
-            continue
-
+        linha = f"{aula}ª Aula"
         grade[dia][linha] = texto
 
-    # Adiciona intervalo em todos os dias
     for dia in dias:
         grade[dia]['🧃 Intervalo'] = '🧃🍞 Intervalo'
 
     return render_template('horarios/horario_professor.html', professor=professor, horario=grade)
+
 
 @routes.route('/professores/horarios')
 @login_obrigatorio
@@ -710,9 +724,6 @@ def listar_professores_horarios():
     professores = cur.fetchall()
     cur.close()
     return render_template('horarios/professores_horarios.html', professores=professores)
-
-
-
 
 # 📥 Cadastrar sala
 @routes.route('/salas/cadastrar', methods=['GET', 'POST'])
@@ -743,6 +754,7 @@ def cadastrar_sala():
     ano_padrao = datetime.now().year
     return render_template('salas/cadastrar_sala.html', ano_padrao=ano_padrao)
 
+
 @routes.route('/salas/<int:sala_id>/alunos')
 @login_obrigatorio
 def visualizar_alunos_da_sala(sala_id):
@@ -760,9 +772,20 @@ def visualizar_alunos_da_sala(sala_id):
     # Busca alunos da sala
     cur.execute("SELECT * FROM alunos WHERE sala_id = %s", (sala_id,))
     alunos = cur.fetchall()
-    cur.close()
 
+    # Formata data de nascimento (YYYY-MM-DD → DD/MM/YYYY)
+    for aluno in alunos:
+        data_str = aluno.get("data_nascimento")
+        if data_str:
+            try:
+                data_formatada = datetime.strptime(str(data_str), "%Y-%m-%d").strftime("%d/%m/%Y")
+                aluno["data_nascimento"] = data_formatada
+            except:
+                aluno["data_nascimento"] = data_str  # fallback
+
+    cur.close()
     return render_template('salas/visualizar_alunos.html', sala=sala, alunos=alunos)
+
 
 
 
@@ -1186,6 +1209,7 @@ def exibir_exportar_usuarios():
 
 @routes.route('/horario/sala/<int:sala_id>/editar')
 @login_obrigatorio
+@somente_master
 def editar_grade_sala(sala_id):
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -1225,40 +1249,45 @@ def editar_grade(sala_id):
         cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
         mysql.connection.commit()
 
-        # Percorre os novos dados enviados no formulário
-        for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']:
+        # Lista de dias
+        dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+
+        for dia in dias:
             for i in range(1, 7):  # 1ª até 6ª aula
                 materia = request.form.get(f'{dia}_{i}_materia')
-                professor = request.form.get(f'{dia}_{i}_professor')
+                professor_nome = request.form.get(f'{dia}_{i}_professor')
 
-                if materia and professor:
+                if materia and professor_nome:
+                    # Buscar o ID do professor pelo nome
+                    cur.execute("SELECT id FROM professores WHERE nome = %s", (professor_nome,))
+                    prof_row = cur.fetchone()
+                    professor_id = prof_row['id'] if prof_row else None
+
                     cur.execute("""
-                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor)
+                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor_id)
                         VALUES (%s, %s, %s, %s, %s)
-                    """, (sala_id, dia, i, materia, professor))
+                    """, (sala_id, dia, i, materia, professor_id))
+
         mysql.connection.commit()
         cur.close()
-        flash("Grade atualizada com sucesso!", "success")
+        flash("✅ Grade atualizada com sucesso!", "success")
         return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
 
-    # GET: carregar grade atual para edição
+    # Parte GET (carrega o formulário)
     cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
     sala = cur.fetchone()
 
-    cur.execute("""
-        SELECT * FROM horarios WHERE sala_id = %s
-    """, (sala_id,))
+    cur.execute("SELECT * FROM horarios WHERE sala_id = %s", (sala_id,))
     horarios_raw = cur.fetchall()
 
     # Agrupa por dia e aula
-    horario = {dia: {i: {'materia': '', 'professor': ''} for i in range(1, 7)} for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']}
+    horario = {dia: {i: {'materia': '', 'professor': ''} for i in range(1, 7)} for dia in dias}
     for h in horarios_raw:
         horario[h['dia_semana']][h['aula_numero']] = {
             'materia': h['materia'],
-            'professor': h['professor']
+            'professor': h.get('professor') or ''
         }
 
-    # Buscar todos os professores para o select
     cur.execute("SELECT nome FROM professores ORDER BY nome")
     professores = [row['nome'] for row in cur.fetchall()]
     cur.close()
