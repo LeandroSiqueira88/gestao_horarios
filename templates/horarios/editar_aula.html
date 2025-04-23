@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Editar Aula{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">✏️ Editar Aula - {{ dia }} - {{ aula_numero }}ª Aula</h2>
+    <a href="{{ url_for('routes.selecionar_aula_para_edicao', sala_id=sala.id) }}" class="btn btn-voltar mb-3">🔙 Voltar</a>
+
+    <form method="POST" class="mx-auto" style="max-width: 500px;">
+        <div class="mb-3">
+            <label class="form-label">Matéria</label>
+            <input type="text" name="materia" class="form-control" required
+                   value="{{ aula_atual.materia if aula_atual else '' }}">
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Professor</label>
+            <select class="form-select" name="professor_id" required>
+                <option value="">-- Selecione um professor --</option>
+                {% set grupo = '' %}
+                {% for prof in professores %}
+                    {% if prof.especialidade != grupo %}
+                        {% if not loop.first %}</optgroup>{% endif %}
+                        <optgroup label="{{ prof.especialidade }}">
+                        {% set grupo = prof.especialidade %}
+                    {% endif %}
+                    <option value="{{ prof.id }}"
+                        {% if aula_atual and aula_atual.professor_id == prof.id %}selected{% endif %}>
+                        {{ prof.nome }}
+                    </option>
+                    {% if loop.last %}</optgroup>{% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-success px-4">💾 Salvar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -12,6 +12,9 @@ from fpdf import FPDF
 from flask import Response
 from collections import defaultdict
 import re
+from auth import perfil_autorizado
+import json
+
 
 app = Flask(__name__)
 # 🔹 Criando o Blueprint
@@ -732,8 +735,6 @@ def visualizar_horario_professor(professor_id):
     carga_horaria=len(resultados)
 )
 
-
-
 @routes.route('/professores/horarios')
 @login_obrigatorio
 def listar_professores_horarios():
@@ -1256,59 +1257,226 @@ def editar_grade_sala(sala_id):
     cur.close()
     return render_template('horarios/editar_grade.html', sala=sala, horarios=horarios, professores=professores)
 
-@routes.route('/editar_grade/<int:sala_id>', methods=['GET', 'POST'])
+@routes.route('/editar_aula/<int:sala_id>')
 @login_obrigatorio
-@somente_master
-def editar_grade(sala_id):
+def selecionar_aula_para_edicao(sala_id):
+    if session.get('usuario_perfil') not in ['master', 'administrativo']:
+        flash('Acesso restrito!', 'danger')
+        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
+
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+
+    cur.execute("""
+        SELECT h.*, p.nome AS professor_nome
+        FROM horarios h
+        LEFT JOIN professores p ON h.professor_id = p.id
+        WHERE h.sala_id = %s
+    """, (sala_id,))
+    horarios = cur.fetchall()
+    cur.close()
+
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    return render_template('horarios/selecionar_aula.html', sala=sala, horarios=horarios, dias=dias)
+
+@routes.route('/editar_aula/<int:sala_id>/<dia>/<int:aula>', methods=['GET', 'POST'])
+@login_obrigatorio
+def editar_aula(sala_id, dia, aula):
+    if session.get('usuario_perfil') not in ['master', 'administrativo']:
+        flash('Acesso restrito!', 'danger')
+        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
+
     mysql = get_mysql()
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
     if request.method == 'POST':
-        # Apaga os horários antigos dessa sala
-        cur.execute("DELETE FROM horarios WHERE sala_id = %s", (sala_id,))
-        mysql.connection.commit()
+        materia = request.form.get("materia")
+        professor_id = request.form.get("professor_id")
 
-        # Lista de dias
-        dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+        # Verifica conflito com outro horário
+        cur.execute("""
+            SELECT * FROM horarios
+            WHERE professor_id = %s AND dia_semana = %s AND aula_numero = %s AND sala_id != %s
+        """, (professor_id, dia, aula, sala_id))
+        conflito = cur.fetchone()
 
-        for dia in dias:
-            for i in range(1, 7):  # 1ª até 6ª aula
-                materia = request.form.get(f'{dia}_{i}_materia')
-                professor_nome = request.form.get(f'{dia}_{i}_professor')
+        if conflito:
+            flash("❌ Esse professor já tem aula nesse horário em outra sala.", "danger")
+        else:
+            cur.execute("""
+                DELETE FROM horarios 
+                WHERE sala_id = %s AND dia_semana = %s AND aula_numero = %s
+            """, (sala_id, dia, aula))
 
-                if materia and professor_nome:
-                    # Buscar o ID do professor pelo nome
-                    cur.execute("SELECT id FROM professores WHERE nome = %s", (professor_nome,))
-                    prof_row = cur.fetchone()
-                    professor_id = prof_row['id'] if prof_row else None
+            cur.execute("""
+                INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor_id)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (sala_id, dia, aula, materia, professor_id))
+            mysql.connection.commit()
+            flash("✅ Aula atualizada com sucesso!", "success")
+            return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
 
-                    cur.execute("""
-                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor_id)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (sala_id, dia, i, materia, professor_id))
-
-        mysql.connection.commit()
-        cur.close()
-        flash("✅ Grade atualizada com sucesso!", "success")
-        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
-
-    # Parte GET (carrega o formulário)
+    # Parte GET: buscar dados atuais
     cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
     sala = cur.fetchone()
 
-    cur.execute("SELECT * FROM horarios WHERE sala_id = %s", (sala_id,))
-    horarios_raw = cur.fetchall()
+    cur.execute("""
+        SELECT * FROM horarios WHERE sala_id = %s AND dia_semana = %s AND aula_numero = %s
+    """, (sala_id, dia, aula))
+    aula_atual = cur.fetchone()
 
-    # Agrupa por dia e aula
-    horario = {dia: {i: {'materia': '', 'professor': ''} for i in range(1, 7)} for dia in dias}
-    for h in horarios_raw:
-        horario[h['dia_semana']][h['aula_numero']] = {
-            'materia': h['materia'],
-            'professor': h.get('professor') or ''
-        }
-
-    cur.execute("SELECT nome FROM professores ORDER BY nome")
-    professores = [row['nome'] for row in cur.fetchall()]
+    cur.execute("SELECT id, nome, especialidade FROM professores ORDER BY especialidade, nome")
+    professores = cur.fetchall()
     cur.close()
 
-    return render_template('horarios/editar_grade.html', sala=sala, horario=horario, professores=professores)
+    return render_template('horarios/editar_aula.html',
+                           sala=sala, dia=dia, aula_numero=aula,
+                           aula_atual=aula_atual, professores=professores)
+
+
+@routes.route('/editar_grade/<int:sala_id>', methods=['GET', 'POST'])
+@login_obrigatorio
+def editar_grade(sala_id):
+    if session.get('usuario_perfil') not in ['master', 'administrativo']:
+        flash('Apenas usuários com permissões podem editar a grade.', 'danger')
+        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
+
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+    aulas = list(range(1, 7))
+
+    if request.method == 'POST':
+        conflitos = []
+
+        for dia in dias:
+            for aula in aulas:
+                especialidade = request.form.get(f'{dia}_{aula}_especialidade')
+                professor_nome = request.form.get(f'{dia}_{aula}_professor')
+
+                if not especialidade or not professor_nome:
+                    continue
+
+                # Buscar professor_id
+                cur.execute("SELECT id FROM professores WHERE nome = %s AND especialidade = %s", (professor_nome, especialidade))
+                prof_row = cur.fetchone()
+                if not prof_row:
+                    continue
+
+                professor_id = prof_row['id']
+
+                # Verifica se o professor já está ocupado nesse horário em outra sala
+                cur.execute("""
+                    SELECT id FROM horarios 
+                    WHERE professor_id = %s AND dia_semana = %s AND aula_numero = %s AND sala_id != %s
+                """, (professor_id, dia, aula, sala_id))
+                conflito = cur.fetchone()
+                if conflito:
+                    conflitos.append(f"⚠️ {professor_nome} já tem aula na {aula}ª aula de {dia}.")
+                    continue
+
+                # Verifica se já existe uma entrada para este slot
+                cur.execute("""
+                    SELECT id FROM horarios 
+                    WHERE sala_id = %s AND dia_semana = %s AND aula_numero = %s
+                """, (sala_id, dia, aula))
+                existente = cur.fetchone()
+
+                if existente:
+                    cur.execute("""
+                        UPDATE horarios SET materia = %s, professor_id = %s 
+                        WHERE id = %s
+                    """, (especialidade, professor_id, existente['id']))
+                else:
+                    cur.execute("""
+                        INSERT INTO horarios (sala_id, dia_semana, aula_numero, materia, professor_id)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (sala_id, dia, aula, especialidade, professor_id))
+
+        mysql.connection.commit()
+        cur.close()
+
+        if conflitos:
+            flash("⚠️ Algumas alterações não foram salvas devido a conflitos:", "warning")
+            for c in conflitos:
+                flash(c, "warning")
+        else:
+            flash("✅ Grade atualizada com sucesso!", "success")
+
+        return redirect(url_for('routes.visualizar_horario_sala', sala_id=sala_id))
+
+    # Parte GET
+    cur.execute("SELECT * FROM salas WHERE id = %s", (sala_id,))
+    sala = cur.fetchone()
+
+    cur.execute("""
+        SELECT h.*, p.nome AS professor, p.especialidade 
+        FROM horarios h
+        LEFT JOIN professores p ON h.professor_id = p.id
+        WHERE h.sala_id = %s
+    """, (sala_id,))
+    horarios_raw = cur.fetchall()
+
+    # Organizar grade existente
+    horario = {dia: {str(i): {'especialidade': '', 'professor': ''} for i in aulas} for dia in dias}
+    for h in horarios_raw:
+        dia = h['dia_semana']
+        aula = str(h['aula_numero'])
+        horario[dia][aula] = {
+            'especialidade': h['materia'],
+            'professor': h['professor'] or ''
+        }
+
+    # Professores para JS (agrupados por especialidade)
+    cur.execute("SELECT nome, especialidade FROM professores ORDER BY especialidade, nome")
+    professores = cur.fetchall()
+    cur.close()
+
+    from collections import defaultdict
+    prof_dict = defaultdict(list)
+    for prof in professores:
+        prof_dict[prof['especialidade']].append(prof['nome'])
+
+    import json
+    professores_json = json.dumps(prof_dict, ensure_ascii=False)
+    especialidades = sorted(prof_dict.keys())
+
+    return render_template(
+        'horarios/editar_grade.html',
+        sala=sala,
+        horario=horario,
+        professores=professores,
+        professores_json=professores_json,
+        especialidades=especialidades
+    )
+
+@routes.route('/ajax/professores_disponiveis', methods=['POST'])
+@login_obrigatorio
+def professores_disponiveis_ajax():
+    data = request.get_json()
+    especialidade = data.get('especialidade')
+    dia = data.get('dia')
+    aula = data.get('aula')
+    sala_id = data.get('sala_id')
+
+    mysql = get_mysql()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+    cur.execute("""
+        SELECT p.id, p.nome
+        FROM professores p
+        WHERE p.especialidade = %s
+        AND p.id NOT IN (
+            SELECT professor_id FROM horarios
+            WHERE dia_semana = %s AND aula_numero = %s AND sala_id != %s
+        )
+    """, (especialidade, dia, aula, sala_id))
+
+    professores = cur.fetchall()
+    cur.close()
+
+    return jsonify(professores)

@@ -1,64 +1,150 @@
 {% extends 'base.html' %}
-{% block title %}Editar Grade de Horário{% endblock %}
+{% block title %}Editar Grade - Sala {{ sala.nome }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-voltar mb-3">🔙 Voltar</a>
-    <h2 class="mb-4">✏️ Editar Grade da Sala: {{ sala.nome }}</h2>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    <h2 class="mb-4 text-center">✏️ Editar Grade da Sala {{ sala.nome }}</h2>
 
     <form method="POST">
         <div class="table-responsive rounded shadow-sm border">
-            <table class="table table-striped table-bordered text-center align-middle mb-0">
+            <table class="table table-bordered text-center align-middle">
                 <thead class="table-header-azul">
                     <tr>
-                        <th>Dia</th>
-                        <th>Nº Aula</th>
-                        <th>Matéria</th>
-                        <th>Professor</th>
+                        <th>Aula</th>
+                        <th>Horário</th>
+                        {% for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
+                            <th>{{ dia }}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for dia, aulas in horario.items() %}
-                        {% for numero in range(1, 7) %}
-                        <tr>
-                            <td>{{ dia }}</td>
-                            <td>{{ numero }}ª</td>
-                            <td>
-                                <input type="text"
-                                       name="{{ dia }}_{{ numero }}_materia"
-                                       class="form-control"
-                                       value="{{ aulas[numero]['materia'] }}">
-                            </td>
-                            <td>
-                                <select name="{{ dia }}_{{ numero }}_professor" class="form-select">
-                                    <option value="">-- Selecione --</option>
-                                    {% for prof in professores %}
-                                        <option value="{{ prof }}"
-                                            {% if prof == aulas[numero]['professor'] %}selected{% endif %}>
-                                            {{ prof }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                        </tr>
+                    {% set horarios = {
+                        '1ª Aula': '07:00 – 07:50',
+                        '2ª Aula': '07:50 – 08:40',
+                        '3ª Aula': '08:40 – 09:30',
+                        '🧃 Intervalo': '09:30 – 09:50',
+                        '4ª Aula': '09:50 – 10:40',
+                        '5ª Aula': '10:40 – 11:30',
+                        '6ª Aula': '11:30 – 12:20'
+                    } %}
+
+                    {% for aula_nome, hora in horarios.items() %}
+                    <tr>
+                        <td class="fw-bold">{{ aula_nome }}</td>
+                        <td><small>{{ hora }}</small></td>
+                        {% for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
+                        <td style="min-width: 200px;">
+                            {% if aula_nome != '🧃 Intervalo' %}
+                                {% set aula_numero = aula_nome.split('ª')[0] %}
+                                <div class="mb-2">
+                                    <select class="form-select form-select-sm especialidade-select" 
+                                            name="{{ dia }}_{{ aula_numero }}_especialidade"
+                                            data-dia="{{ dia }}" data-aula="{{ aula_numero }}">
+                                        <option value="">-- Especialidade --</option>
+                                        {% for esp in especialidades %}
+                                            <option value="{{ esp }}"
+                                                {% if horario[dia][aula_numero]['especialidade'] == esp %}selected{% endif %}>
+                                                {{ esp }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <select class="form-select form-select-sm professor-select"
+                                            name="{{ dia }}_{{ aula_numero }}_professor"
+                                            id="{{ dia }}_{{ aula_numero }}_professor">
+                                        <option value="">-- Professor --</option>
+                                        {% for prof in professores %}
+                                            {% if prof.especialidade == horario[dia][aula_numero]['especialidade'] %}
+                                                <option value="{{ prof.nome }}"
+                                                    {% if prof.nome == horario[dia][aula_numero]['professor'] %}selected{% endif %}>
+                                                    {{ prof.nome }}
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% else %}
+                                <span>🧃🍞 Intervalo</span>
+                            {% endif %}
+                        </td>
                         {% endfor %}
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <button type="submit" class="btn btn-primary mt-4">💾 Salvar Alterações</button>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-voltar btn-lg px-4">
+                🔙 Cancelar
+            </a>
+            <button type="submit" class="btn btn-success btn-lg px-4">💾 Salvar Alterações</button>
+        </div>
     </form>
 </div>
+
+<script>
+    const professoresPorEspecialidade = {{ professores_json|safe }};
+
+    document.querySelectorAll('.especialidade-select').forEach(select => {
+        select.addEventListener('change', function () {
+            const especialidade = this.value;
+            const dia = this.dataset.dia;
+            const aula = this.dataset.aula;
+            const professorSelect = document.getElementById(`${dia}_${aula}_professor`);
+
+            professorSelect.innerHTML = '<option value="">-- Professor --</option>';
+
+            if (professoresPorEspecialidade[especialidade]) {
+                professoresPorEspecialidade[especialidade].forEach(nome => {
+                    const option = document.createElement('option');
+                    option.value = nome;
+                    option.textContent = nome;
+                    professorSelect.appendChild(option);
+                });
+            }
+        });
+    });
+</script>
+<script>
+    document.querySelectorAll('.especialidade-select').forEach(select => {
+        select.addEventListener('change', function () {
+            const especialidade = this.value;
+            const dia = this.dataset.dia;
+            const aula = this.dataset.aula;
+            const professorSelect = document.getElementById(`${dia}_${aula}_professor`);
+            const salaId = {{ sala.id }};
+    
+            professorSelect.innerHTML = '<option value="">⏳ Carregando...</option>';
+    
+            fetch("{{ url_for('routes.professores_disponiveis_ajax') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    especialidade: especialidade,
+                    dia: dia,
+                    aula: aula,
+                    sala_id: salaId
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                professorSelect.innerHTML = '<option value="">-- Professor --</option>';
+                data.forEach(prof => {
+                    const opt = document.createElement('option');
+                    opt.value = prof.nome;
+                    opt.textContent = prof.nome;
+                    professorSelect.appendChild(opt);
+                });
+            })
+            .catch(err => {
+                professorSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+            });
+        });
+    });
+    </script>
+    
 {% endblock %}
+
+

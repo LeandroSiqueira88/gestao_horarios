@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Selecionar Aula para Edição{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">🧩 Selecionar Aula para Edição - Sala {{ sala.nome }}</h2>
+    <a href="{{ url_for('routes.visualizar_horario_sala', sala_id=sala.id) }}" class="btn btn-voltar mb-3">🔙 Voltar</a>
+
+    <div class="table-responsive rounded shadow-sm border">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="table-header-azul">
+                <tr>
+                    <th>Dia</th>
+                    <th>Nº Aula</th>
+                    <th>Matéria</th>
+                    <th>Professor</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in horarios %}
+                <tr>
+                    <td>{{ h.dia_semana }}</td>
+                    <td>{{ h.aula_numero }}ª</td>
+                    <td>{{ h.materia }}</td>
+                    <td>{{ h.professor_nome or '---' }}</td>
+                    <td>
+                        <a href="{{ url_for('routes.editar_aula', sala_id=sala.id, dia=h.dia_semana, aula=h.aula_numero) }}"
+                           class="btn btn-sm btn-warning">✏️ Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
