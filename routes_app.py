@@ -602,7 +602,7 @@ def gerar_horarios_global():
         "Filosofia": 1,
         "Sociologia": 1,
         "Artes": 1,
-        "Educação Física": 1
+        "Educação Física": 2
     }
 
     dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
