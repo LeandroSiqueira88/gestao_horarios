@@ -3,15 +3,16 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">👨‍🏫 Lista de Professores</h2>
+    <h2 class="mb-4 text-center">👨‍🏫 Lista de Professores</h2>
 
     <div class="table-responsive rounded shadow-sm border">
         <table id="tabela-professores" class="table table-striped table-bordered text-center align-middle mb-0">
             <thead class="table-header-azul">
                 <tr>
                     <th>Nome</th>
-                    <th>Especialidade</th>
+                    <th>Telefone</th>                    
                     <th>Email</th>
+                    <th>Especialidade</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -19,8 +20,9 @@
                 {% for professor in professores %}
                 <tr>
                     <td>{{ professor.nome }}</td>
-                    <td>{{ professor.especialidade }}</td>
+                    <td>{{ professor.telefone }}</td>
                     <td>{{ professor.email }}</td>
+                    <td>{{ professor.especialidade }}</td>             
                     <td class="table-actions">
                         <a href="{{ url_for('routes.visualizar_horario_professor', professor_id=professor.id) }}" class="btn btn-info btn-sm">
                             📅 Ver Grade

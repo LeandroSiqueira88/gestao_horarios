@@ -115,9 +115,9 @@
             const aula = this.dataset.aula;
             const professorSelect = document.getElementById(`${dia}_${aula}_professor`);
             const salaId = {{ sala.id }};
-    
+
             professorSelect.innerHTML = '<option value="">⏳ Carregando...</option>';
-    
+
             fetch("{{ url_for('routes.professores_disponiveis_ajax') }}", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -131,20 +131,25 @@
             .then(res => res.json())
             .then(data => {
                 professorSelect.innerHTML = '<option value="">-- Professor --</option>';
-                data.forEach(prof => {
+                if (data.length > 0) {
+                    data.forEach(prof => {
+                        const opt = document.createElement('option');
+                        opt.value = prof.nome;
+                        opt.textContent = prof.nome;
+                        professorSelect.appendChild(opt);
+                    });
+                } else {
                     const opt = document.createElement('option');
-                    opt.value = prof.nome;
-                    opt.textContent = prof.nome;
+                    opt.value = "";
+                    opt.textContent = "Nenhum professor disponível";
                     professorSelect.appendChild(opt);
-                });
+                }
             })
             .catch(err => {
+                console.error(err);
                 professorSelect.innerHTML = '<option value="">Erro ao carregar</option>';
             });
         });
     });
-    </script>
-    
+</script>   
 {% endblock %}
-
-
